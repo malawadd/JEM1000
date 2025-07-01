@@ -1,27 +1,47 @@
 <script setup>
-/** Vendor */
-import { watch } from "vue"
-
-/** Services */
-import { getCeleniumURL } from "@/services/general"
-
-/** Store */
+import { ref, watch, onMounted } from "vue"
+import { DateTime } from "luxon"
+import { fetchLatestTransactions } from "@/services/api/euler"
 import { useAppStore } from "@/stores/app"
-const appStore = useAppStore()
 
-const props = defineProps({
-	txs: {
-		type: Array,
-		default: [],
-	},
-})
+const appStore = useAppStore()
+const transactions = ref([])
+
+const formatAddress = (addr) => `${addr.slice(0, 6)}...${addr.slice(-4)}`
+const formatAmount = (amount) => {
+	const num = parseFloat(amount) / 1e18
+	return num > 1000 ? `${(num/1000).toFixed(1)}K` : num.toFixed(2)
+}
+
+const getTransactionType = (tx) => {
+	if (tx.assets && tx.shares) return tx.sender ? 'Deposit' : 'Withdraw'
+	if (tx.assets && !tx.shares) return 'Borrow'
+	return 'Unknown'
+}
+
+const loadTransactions = async () => {
+	try {
+		const data = await fetchLatestTransactions(20)
+		const allTxs = [
+			...data.deposits.map(tx => ({ ...tx, type: 'Deposit' })),
+			...data.borrows.map(tx => ({ ...tx, type: 'Borrow' })),
+			...data.withdraws.map(tx => ({ ...tx, type: 'Withdraw' }))
+		]
+		transactions.value = allTxs.sort((a, b) => b.blockTimestamp - a.blockTimestamp).slice(0, 20)
+	} catch (error) {
+		console.error('Failed to load transactions:', error)
+	}
+}
+
+onMounted(loadTransactions)
+watch(() => appStore.network, loadTransactions)
 </script>
 
 <template>
 	<Flex direction="column" gap="16" :class="$style.wrapper">
 		<Text size="12" weight="600" color="tertiary">Latest Transactions</Text>
 
-		<a v-for="tx in txs" gap="8" :href="`${getCeleniumURL(appStore.network)}/tx/${tx.hash}`" target="_blank">
+		<a v-for="tx in transactions" :key="tx.id" gap="8" :href="`https://etherscan.io/tx/${tx.transactionHash}`" target="_blank">
 			<Flex gap="8">
 				<Flex direction="column" align="center" gap="8">
 					<div :class="$style.circle" />
@@ -31,14 +51,17 @@ const props = defineProps({
 				<Flex direction="column" gap="6">
 					<Flex align="center" gap="6">
 						<Text size="14" weight="600" color="primary" mono style="text-transform: uppercase">
-							<Text color="secondary" style="text-transform: capitalize"> Tx</Text> {{ tx.hash.slice(0, 4) }}...{{
-								tx.hash.slice(-4)
-							}}
+							<Text color="secondary" style="text-transform: capitalize">{{ tx.type }}</Text> 
+							{{ formatAddress(tx.transactionHash) }}
 						</Text>
 						<Icon name="arrow-top-right" size="14" color="tertiary" />
 					</Flex>
-					<Text size="14" weight="500" height="140" color="tertiary" mono> {{ tx.message_types.join(", ") }} </Text>
-					<Text size="13" weight="600" color="support" mono :class="$style.when"> Events: {{ tx.events_count }} </Text>
+					<Text size="14" weight="500" height="140" color="tertiary" mono>
+						{{ formatAddress(tx.vault) }}
+					</Text>
+					<Text size="13" weight="600" color="support" mono :class="$style.when">
+						Amount: {{ formatAmount(tx.assets || '0') }}
+					</Text>
 				</Flex>
 			</Flex>
 		</a>
@@ -49,7 +72,6 @@ const props = defineProps({
 .wrapper {
 	max-width: 300px;
 	flex: 1;
-
 	overflow: auto;
 	min-height: 0;
 }
@@ -61,17 +83,14 @@ const props = defineProps({
 .circle {
 	min-width: 10px;
 	min-height: 10px;
-
 	border-radius: 50%;
 	border: 2px solid var(--green);
-
 	margin-top: 3px;
 }
 
 .line {
 	width: 2px;
 	height: 100%;
-
 	background: var(--op-5);
 }
 

@@ -1,48 +1,66 @@
 <script setup>
-/** Vendor */
-import { ref, onMounted } from "vue"
+import { ref, onMounted, watch } from "vue"
 import { DateTime } from "luxon"
+import { fetchSwaps } from "@/services/api/euler"
+import { useAppStore } from "@/stores/app"
 
-/** UI */
-import Tooltip from "@/components/ui/Tooltip.vue"
+const appStore = useAppStore()
+const swaps = ref([])
+const totalVolume = ref(0)
 
-/** API */
-import { fetchGasPriceSeries } from "@/services/api/stats"
+const formatAmount = (amount) => {
+	const num = parseFloat(amount) / 1e18
+	if (num > 1e9) return `${(num/1e9).toFixed(1)}B`
+	if (num > 1e6) return `${(num/1e6).toFixed(1)}M`
+	if (num > 1e3) return `${(num/1e3).toFixed(1)}K`
+	return num.toFixed(2)
+}
 
-const gasPriceSeries = ref([])
-const maxValue = ref(0)
+const formatAddress = (addr) => `${addr.slice(0, 6)}...${addr.slice(-4)}`
 
-onMounted(async () => {
-	gasPriceSeries.value = (
-		await fetchGasPriceSeries({
-			timeframe: "day",
-			from: parseInt(DateTime.now().minus({ days: 30 }).ts / 1_000),
-			to: parseInt(DateTime.now().plus({ minutes: 1 }).ts / 1_000),
-		})
-	).reverse()
+const loadData = async () => {
+	try {
+		const since = Math.floor(Date.now() / 1000) - (24 * 60 * 60) // 24h ago
+		const data = await fetchSwaps(since.toString())
+		swaps.value = data.eulerSwaps || []
+		totalVolume.value = swaps.value.reduce((acc, swap) => {
+			return acc + parseFloat(swap.amount0In) + parseFloat(swap.amount1In)
+		}, 0)
+	} catch (error) {
+		console.error('Failed to load swaps:', error)
+	}
+}
 
-	maxValue.value = Math.max(...gasPriceSeries.value.map((s) => parseFloat(s.value)))
-})
+onMounted(loadData)
+watch(() => appStore.network, loadData)
 </script>
 
 <template>
 	<Flex direction="column" justify="between" gap="16" :class="$style.wrapper">
 		<Flex direction="column" gap="8">
-			<Text size="16" weight="500" color="primary">Gas Price</Text>
-			<Text size="13" weight="500" color="tertiary">Last 30 days</Text>
+			<Text size="16" weight="500" color="primary">Euler Swaps (24h)</Text>
+			<Text size="13" weight="500" color="tertiary">Total Volume: {{ formatAmount(totalVolume.toString()) }}</Text>
 		</Flex>
 
-		<Flex :class="$style.chart">
-			<Tooltip v-for="bar in gasPriceSeries" wide tall alignEnd side="top" :class="$style.bar_wrapper">
-				<div :style="{ height: `${parseFloat((bar.value * 100) / maxValue)}%` }" :class="[$style.bar]" />
-
-				<template #content>
-					<Flex direction="column" align="center" gap="6">
-						<Text> {{ parseFloat(bar.value).toFixed(4) }} UTIA </Text>
-						<Text color="tertiary"> {{ DateTime.fromISO(bar.time).setLocale("en").toFormat("ff") }} </Text>
+		<Flex direction="column" gap="8" :class="$style.swaps">
+			<div v-for="swap in swaps.slice(0, 8)" :key="swap.id" :class="$style.swap">
+				<Flex justify="between" align="center">
+					<Flex direction="column" gap="4">
+						<Text size="14" weight="600" color="primary">{{ formatAddress(swap.sender) }}</Text>
+						<Text size="12" weight="500" color="tertiary">
+							{{ DateTime.fromSeconds(parseInt(swap.blockTimestamp)).toRelative() }}
+						</Text>
 					</Flex>
-				</template>
-			</Tooltip>
+					<Flex direction="column" align="end" gap="4">
+						<Text size="14" weight="600" color="primary">
+							{{ formatAmount(swap.amount0In) }}
+						</Text>
+						<Text size="12" weight="500" color="tertiary">
+							→ {{ formatAmount(swap.amount0Out) }}
+						</Text>
+					</Flex>
+				</Flex>
+			</div>
 		</Flex>
 	</Flex>
 </template>
@@ -51,34 +69,19 @@ onMounted(async () => {
 .wrapper {
 	min-width: 500px;
 	min-height: 220px;
-
 	background: var(--card-background);
-
 	padding: 20px;
 }
 
-.chart {
-	height: 100%;
-
-	border-radius: 10px;
-	overflow: hidden;
-	background-image: url("/point.svg");
+.swaps {
+	max-height: 300px;
+	overflow-y: auto;
 }
 
-.bar_wrapper {
-	display: flex;
-	flex-direction: column;
-	justify-content: flex-end;
-
-	width: 100%;
-	height: 100%;
-}
-
-.bar {
-	width: 100%;
-	height: 0%;
-
-	background: linear-gradient(rgba(255, 255, 255, 15%), rgba(255, 255, 255, 00%));
-	border-top: 2px solid var(--txt-secondary);
+.swap {
+	padding: 12px;
+	border-radius: 8px;
+	background: var(--op-5);
+	margin-bottom: 8px;
 }
 </style>

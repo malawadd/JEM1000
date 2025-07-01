@@ -1,67 +1,65 @@
 <script setup>
-/** Vendor */
 import { ref, watch, onMounted } from "vue"
 import { DateTime } from "luxon"
-
-/** Services */
-import { formatBytes } from "@/services/general"
-
-/** API */
-import { fetchSeries } from "@/services/api/stats"
-
-/** Store */
+import { fetchVaultStatus } from "@/services/api/euler"
 import { useAppStore } from "@/stores/app"
+
 const appStore = useAppStore()
+const vaultData = ref([])
+const maxCash = ref(0)
 
-const series = ref([])
-const maxSize = ref(0)
-
-const getData = async () => {
-	series.value = await fetchSeries({
-		table: "blobs_size",
-		period: "day",
-		from: parseInt(DateTime.now().minus({ day: 60 }).ts / 1_000),
-		to: parseInt(DateTime.now().ts / 1_000),
-	})
-
-	for (let i = 0; i < 40; i++) {
-		series.value.push({ time: null, value: null })
-	}
-
-	maxSize.value = Math.max(...series.value.map((s) => s.value))
+const formatAmount = (amount) => {
+	const num = parseFloat(amount) / 1e18
+	if (num > 1e9) return `${(num/1e9).toFixed(1)}B`
+	if (num > 1e6) return `${(num/1e6).toFixed(1)}M`
+	if (num > 1e3) return `${(num/1e3).toFixed(1)}K`
+	return num.toFixed(2)
 }
 
-onMounted(() => {
-	getData()
-})
+const getData = async () => {
+	try {
+		const data = await fetchVaultStatus()
+		const statuses = data.vaultStatuses || []
+		
+		// Group by vault and get latest status for each
+		const vaultMap = new Map()
+		statuses.forEach(status => {
+			const vaultId = status.id.split('-')[0]
+			if (!vaultMap.has(vaultId) || status.blockTimestamp > vaultMap.get(vaultId).blockTimestamp) {
+				vaultMap.set(vaultId, status)
+			}
+		})
+		
+		vaultData.value = Array.from(vaultMap.values()).slice(0, 60)
+		maxCash.value = Math.max(...vaultData.value.map(v => parseFloat(v.cash)))
+	} catch (error) {
+		console.error('Failed to load vault status:', error)
+	}
+}
 
-watch(
-	() => appStore.network,
-	() => {
-		getData()
-	},
-)
+onMounted(getData)
+watch(() => appStore.network, getData)
 </script>
 
 <template>
 	<Flex direction="column" justify="between" gap="24" :class="$style.wrapper">
 		<Flex justify="between">
 			<Flex direction="column" gap="8">
-				<Text size="16" weight="500" color="primary">Blobs Flow</Text>
-				<Text size="13" weight="500" color="tertiary">Highest in 60 days: {{ formatBytes(maxSize) }}</Text>
+				<Text size="16" weight="500" color="primary">Cash vs Debt</Text>
+				<Text size="13" weight="500" color="tertiary">Highest cash: {{ formatAmount(maxCash.toString()) }}</Text>
 			</Flex>
 
 			<Flex direction="column" align="end" gap="8">
-				<Text size="18" weight="600" color="primary" mono>+{{ formatBytes(series[0]?.value) }}</Text>
-				<Text size="13" weight="500" color="tertiary">Today</Text>
+				<Text size="18" weight="600" color="primary" mono>{{ vaultData.length }}</Text>
+				<Text size="13" weight="500" color="tertiary">Vaults</Text>
 			</Flex>
 		</Flex>
 
-		<Flex gap="8" :class="$style.days">
-			<Flex v-for="day in series" align="end" :class="$style.day">
+		<Flex gap="8" :class="$style.vaults">
+			<Flex v-for="vault in vaultData" align="end" :class="$style.vault">
 				<div
-					:style="{ height: ` ${day.value ? (day.value * 100) / maxSize : 5}%` }"
-					:class="[$style.bar, day.value && $style.active]"
+					:style="{ height: `${vault.cash ? (parseFloat(vault.cash) * 100) / maxCash : 5}%` }"
+					:class="[$style.bar, vault.cash && $style.active]"
 				/>
 			</Flex>
 		</Flex>
@@ -73,35 +71,31 @@ watch(
 	position: relative;
 	width: 100%;
 	min-height: 220px;
-
 	background: var(--card-background);
 	overflow: hidden;
-
 	padding: 20px;
 }
 
-.days {
+.vaults {
 	position: absolute;
 	left: 20px;
 	bottom: 20px;
-
 	min-height: 120px;
 	height: 120px;
 }
 
-.day {
+.vault {
 	height: 100%;
 }
 
 .bar {
 	width: 1px;
 	height: 10px;
-
 	background: var(--op-30);
+}
 
-	&.active {
-		background: var(--txt-secondary);
-		box-shadow: 0 0 10px rgba(255, 255, 255, 50%);
-	}
+.bar.active {
+	background: var(--txt-secondary);
+	box-shadow: 0 0 10px rgba(255, 255, 255, 50%);
 }
 </style>
