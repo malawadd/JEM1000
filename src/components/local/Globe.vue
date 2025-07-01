@@ -49,8 +49,6 @@ const MAX_RADIUS = 5
 const PROPAGATION_SPEED = 2
 const NUM_RINGS = 2
 
-const getIcon = () => {}
-
 onMounted(() => {
 	window.addEventListener("resize", onResize)
 
@@ -60,7 +58,7 @@ onMounted(() => {
 			<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"><path fill-rule="evenodd" d="$ICON" clip-rule="evenodd"/></svg>
 			<div class=${cssModule.content}>
 				<div class=${cssModule.title}> New Transaction <div>$HASH</div></div>
-				<div class=${cssModule.subtitle}> Successfull transaction signed by $SIGNER</div>
+				<div class=${cssModule.subtitle}> $TYPE transaction on Euler</div>
 				<div class=${cssModule.subtitle}> $MSG_TYPE $WHEN</div>
 			</div>
 		</div>`
@@ -92,13 +90,14 @@ onMounted(() => {
 		.htmlElement((d) => {
 			const el = document.createElement("div")
 			let popup = markerSvg.replace("$HASH", `${d.tx.hash.slice(0, 4)}...${d.tx.hash.slice(-4)}`)
-			popup = popup.replace("$SIGNER", d.tx.signers[0].slice(-4))
-			popup = popup.replace("$MSG_TYPE", d.tx.message_types[0])
+			popup = popup.replace("$TYPE", d.tx.type || 'Unknown')
+			popup = popup.replace("$MSG_TYPE", d.tx.message_types[0] || d.tx.type)
 			popup = popup.replace("$WHEN", DateTime.fromISO(d.tx.time).setLocale("en").toFormat("ff"))
 			popup = popup.replace(
 				"$ICON",
-				(d.tx.message_types.includes("MsgSend") && icons["coins"]) ||
-					(d.tx.message_types.includes("MsgPayForBlobs") && icons["blob"]) ||
+				(d.tx.type === 'Deposit' && icons["coins"]) ||
+					(d.tx.type === 'Borrow' && icons["blob"]) ||
+					(d.tx.type === 'Withdraw' && icons["zap"]) ||
 					icons["zap"],
 			)
 			el.innerHTML = popup

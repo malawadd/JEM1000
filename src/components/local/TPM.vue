@@ -1,15 +1,44 @@
 <script setup>
 /** Vendor */
-import { ref, onMounted } from "vue"
+import { ref, onMounted, watch } from "vue"
 
 /** API */
-import { fetchTps } from "@/services/api/general"
+import { fetchLatestTransactions } from "@/services/api/euler"
 
-const tps = ref()
+/** Store */
+import { useAppStore } from "@/stores/app"
+const appStore = useAppStore()
+
+const tpm = ref({ current: 0, high: 0 })
+
+const calculateTPM = async () => {
+	try {
+		const data = await fetchLatestTransactions(100)
+		const allTxs = [
+			...data.deposits,
+			...data.borrows,
+			...data.withdraws
+		]
+		
+		// Calculate transactions in last minute
+		const oneMinuteAgo = Math.floor(Date.now() / 1000) - 60
+		const recentTxs = allTxs.filter(tx => parseInt(tx.blockTimestamp) > oneMinuteAgo)
+		
+		tpm.value = {
+			current: recentTxs.length / 60, // per second
+			high: Math.max(tpm.value.high, recentTxs.length / 60)
+		}
+	} catch (error) {
+		console.error('Failed to calculate TPM:', error)
+	}
+}
 
 onMounted(async () => {
-	tps.value = await fetchTps()
+	await calculateTPM()
+	setInterval(calculateTPM, 30_000) // Update every 30 seconds
 })
+
+watch(() => appStore.network, calculateTPM)
 </script>
 
 <template>
@@ -18,13 +47,13 @@ onMounted(async () => {
 			<Flex align="center" gap="6">
 				<div
 					v-for="(bar, idx) in 20"
-					:class="[$style.bar, tps && (tps.current * 60 * 100) / (tps.high * 60) > idx * 5 && $style.active]"
+					:class="[$style.bar, tpm && (tpm.current * 60 * 100) / (tpm.high * 60) > idx * 5 && $style.active]"
 				/>
 			</Flex>
 
 			<Flex align="center" :class="$style.current">
 				<Text size="14" weight="600" color="primary" mono>
-					{{ tps ? (tps.current * 60).toFixed(0) : 0 }}
+					{{ tpm ? (tpm.current * 60).toFixed(0) : 0 }}
 				</Text>
 			</Flex>
 		</Flex>
