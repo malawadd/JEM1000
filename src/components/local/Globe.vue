@@ -38,7 +38,6 @@ let group = null
 let stars = null
 
 const parentClientRect = ref()
-const displayedTxs = ref(new Set())
 
 const getRandomPos = (from = -180, to = 180, fixed = 2) => {
 	return (Math.random() * (to - from) + from).toFixed(fixed) * 1
@@ -49,20 +48,6 @@ const TS = 1500
 const MAX_RADIUS = 5
 const PROPAGATION_SPEED = 2
 const NUM_RINGS = 2
-const CLEAR_DELAY = 300_000 // 5 minutes
-
-const formatGasFee = (gasFee) => {
-	const units = ["wei", "Kwei", "Mwei", "Gwei", "microether", "milliether", "ether"]
-	let unitIndex = 0
-	let readableFee = gasFee
-
-	while (readableFee >= 1000 && unitIndex < units.length - 1) {
-		readableFee /= 1000
-		unitIndex++
-	}
-
-	return `${readableFee.toFixed(2)} ${units[unitIndex]}`
-}
 
 const getIcon = () => {}
 
@@ -72,12 +57,13 @@ onMounted(() => {
 	parentClientRect.value = props.parent.getBoundingClientRect()
 
 	const markerSvg = `<div class=${cssModule.popupWrapper}>
-		<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"><path fill-rule="evenodd" d="$ICON" clip-rule="evenodd"/></svg>
-		<div class=${cssModule.content}>
-			<div class=${cssModule.title}> New Transaction <div>$HASH</div></div>
-			<div class=${cssModule.subtitle}> Gas Fee: $GASFEE</div>
-		</div>
-	</div>`
+			<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"><path fill-rule="evenodd" d="$ICON" clip-rule="evenodd"/></svg>
+			<div class=${cssModule.content}>
+				<div class=${cssModule.title}> New Transaction <div>$HASH</div></div>
+				<div class=${cssModule.subtitle}> Successfull transaction signed by $SIGNER</div>
+				<div class=${cssModule.subtitle}> $MSG_TYPE $WHEN</div>
+			</div>
+		</div>`
 
 	scene = new Three.Scene()
 	scene.add(new Three.AmbientLight("#fff", 0.2))
@@ -106,7 +92,15 @@ onMounted(() => {
 		.htmlElement((d) => {
 			const el = document.createElement("div")
 			let popup = markerSvg.replace("$HASH", `${d.tx.hash.slice(0, 4)}...${d.tx.hash.slice(-4)}`)
-			popup = popup.replace("$GASFEE", formatGasFee(d.tx.actualFee))
+			popup = popup.replace("$SIGNER", d.tx.signers[0].slice(-4))
+			popup = popup.replace("$MSG_TYPE", d.tx.message_types[0])
+			popup = popup.replace("$WHEN", DateTime.fromISO(d.tx.time).setLocale("en").toFormat("ff"))
+			popup = popup.replace(
+				"$ICON",
+				(d.tx.message_types.includes("MsgSend") && icons["coins"]) ||
+					(d.tx.message_types.includes("MsgPayForBlobs") && icons["blob"]) ||
+					icons["zap"],
+			)
 			el.innerHTML = popup
 
 			return el
@@ -168,78 +162,68 @@ onBeforeUnmount(() => {
 })
 
 watch(
-  () => props.txs,
-  (newTxs) => {
-    console.log("New transactions:", newTxs)
-    newTxs.forEach((tx) => {
-      if (!displayedTxs.value.has(tx.hash)) {
-        displayedTxs.value.add(tx.hash)
+	() => props.txs,
+	() => {
+		props.txs.forEach((tx) => {
+			const targetPos = { lat: getRandomPos(140, 220), lng: getRandomPos(0, 360) }
+			const id = uuid()
 
-        const targetPos = { lat: getRandomPos(140, 220), lng: getRandomPos(0, 360) }
-        const id = uuid()
+			globe.arcsData([
+				...globe.arcsData(),
+				{
+					id,
+					startLat: getRandomPos(140, 220),
+					startLng: getRandomPos(0, 360),
+					endLat: targetPos.lat,
+					endLng: targetPos.lng,
+				},
+			])
 
-        globe.arcsData([
-          ...globe.arcsData(),
-          {
-            id,
-            startLat: getRandomPos(140, 220),
-            startLng: getRandomPos(0, 360),
-            endLat: targetPos.lat,
-            endLng: targetPos.lng,
-          },
-        ])
+			setTimeout(() => {
+				globe.ringsData([...globe.ringsData(), { id, lat: targetPos.lat, lng: targetPos.lng }])
+				globe.htmlElementsData([...globe.htmlElementsData(), { id, lat: targetPos.lat, lng: targetPos.lng, tx }])
+				globe.pointsData([...globe.pointsData(), { id, lat: targetPos.lat, lng: targetPos.lng }])
+			}, TS)
 
-        setTimeout(() => {
-          globe.ringsData([...globe.ringsData(), { id, lat: targetPos.lat, lng: targetPos.lng }])
-          globe.htmlElementsData([...globe.htmlElementsData(), { id, lat: targetPos.lat, lng: targetPos.lng, tx }])
-          globe.pointsData([...globe.pointsData(), { id, lat: targetPos.lat, lng: targetPos.lng }])
-        }, TS)
+			setTimeout(() => {
+				globe.arcsData([...globe.arcsData().filter((d) => d.id !== id)])
+			}, TS * 2)
 
-        setTimeout(() => {
-          globe.arcsData([...globe.arcsData().filter((d) => d.id !== id)])
-        }, TS * 2)
-
-        setTimeout(() => {
-          globe.ringsData([...globe.ringsData().filter((d) => d.id !== id)])
-          globe.htmlElementsData([...globe.htmlElementsData().filter((d) => d.id !== id)])
-          globe.pointsData([...globe.pointsData().filter((d) => d.id !== id)])
-          displayedTxs.value.delete(tx.hash)
-        }, CLEAR_DELAY)
-      }
-    })
-  },
-  { deep: true }
+			setTimeout(() => {
+				globe.ringsData([...globe.ringsData().filter((d) => d.id !== id)])
+				globe.htmlElementsData([...globe.htmlElementsData().filter((d) => d.id !== id)])
+				globe.pointsData([...globe.pointsData().filter((d) => d.id !== id)])
+			}, 25_000)
+		})
+	},
 )
 
 watch(
-  () => appStore.network,
-  () => {
-    globe.arcsData([])
-    globe.ringsData([])
-    globe.pointsData([])
-    globe.htmlElementsData([])
-    displayedTxs.value.clear()
-  },
+	() => appStore.network,
+	() => {
+		globe.arcsData([])
+		globe.ringsData([])
+		globe.pointsData([])
+		globe.htmlElementsData([])
+	},
 )
 
 const animate = () => {
-  controls.update()
-  renderers.forEach((r) => r.render(scene, camera))
-  requestAnimationFrame(animate)
+	controls.update()
+	renderers.forEach((r) => r.render(scene, camera))
+
+	requestAnimationFrame(animate)
 }
 
 const onResize = () => {
-  parentClientRect.value = props.parent.getBoundingClientRect()
+	parentClientRect.value = props.parent.getBoundingClientRect()
 
-  camera.aspect = parentClientRect.value.width / parentClientRect.value.height
-  camera.updateProjectionMatrix()
+	camera.aspect = parentClientRect.value.width / parentClientRect.value.height
+	camera.updateProjectionMatrix()
 
-  renderers.forEach((r) => r.setSize(parentClientRect.value.width, parentClientRect.value.height))
+	renderers.forEach((r) => r.setSize(parentClientRect.value.width, parentClientRect.value.height))
 }
 </script>
-
-
-
 
 <template>
 	<div :class="$style.wrapper">

@@ -31,16 +31,14 @@ const props = defineProps({
 				<Flex direction="column" gap="6">
 					<Flex align="center" gap="6">
 						<Text size="14" weight="600" color="primary" mono style="text-transform: uppercase">
-							<Text color="secondary" style="text-transform: capitalize"> Tx</Text> {{ tx.hash.slice(0, 4)
-							}}...{{
-		tx.hash.slice(-4)
-	}}
+							<Text color="secondary" style="text-transform: capitalize"> Tx</Text> {{ tx.hash.slice(0, 4) }}...{{
+								tx.hash.slice(-4)
+							}}
 						</Text>
 						<Icon name="arrow-top-right" size="14" color="tertiary" />
 					</Flex>
-					<Text size="14" weight="500" height="140" color="tertiary" mono> Type: {{ tx.type }} </Text>
-					<Text size="13" weight="600" color="support" mono :class="$style.when"> Status: {{ tx.status }}
-					</Text>
+					<Text size="14" weight="500" height="140" color="tertiary" mono> {{ tx.message_types.join(", ") }} </Text>
+					<Text size="13" weight="600" color="support" mono :class="$style.when"> Events: {{ tx.events_count }} </Text>
 				</Flex>
 			</Flex>
 		</a>

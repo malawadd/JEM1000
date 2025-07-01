@@ -55,8 +55,7 @@ watch(
 
 					<div :class="$style.dots" />
 
-					<Text size="14" weight="600" color="primary" mono no-wrap> {{ formatBytes(head.total_blobs_size) }}
-					</Text>
+					<Text size="14" weight="600" color="primary" mono no-wrap> {{ formatBytes(head.total_blobs_size) }} </Text>
 				</Flex>
 				<Flex align="center" gap="12">
 					<Text size="14" weight="500" color="tertiary" no-wrap> Total Fees </Text>
@@ -78,7 +77,12 @@ watch(
 				</Flex>
 			</Flex>
 
-
+			<Flex align="center" justify="between" :class="$style.bottom">
+				<Text size="13" weight="500" color="tertiary">
+					Celestia Metrics by <a href="https://celenium.io" target="_blank">Celenium</a>
+				</Text>
+				<Text size="13" weight="500" color="support">Updated {{ DateTime.fromMillis(when).toFormat("T") }}</Text>
+			</Flex>
 		</Flex>
 	</Flex>
 </template>
