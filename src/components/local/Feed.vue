@@ -2,6 +2,7 @@
 import { ref, watch, onMounted } from "vue"
 import { DateTime } from "luxon"
 import { fetchLatestTransactions } from "@/services/api/euler"
+import { getExplorerURL } from "@/services/general"
 import { useAppStore } from "@/stores/app"
 
 const appStore = useAppStore()
@@ -41,7 +42,7 @@ watch(() => appStore.network, loadTransactions)
 	<Flex direction="column" gap="16" :class="$style.wrapper">
 		<Text size="12" weight="600" color="tertiary">Latest Transactions</Text>
 
-		<a v-for="tx in transactions" :key="tx.id" gap="8" :href="`https://etherscan.io/tx/${tx.transactionHash}`" target="_blank">
+		<a v-for="tx in transactions" :key="tx.id" gap="8" :href="`${getExplorerURL(appStore.network)}/tx/${tx.transactionHash}`" target="_blank">
 			<Flex gap="8">
 				<Flex direction="column" align="center" gap="8">
 					<div :class="$style.circle" />

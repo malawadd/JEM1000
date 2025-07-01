@@ -103,7 +103,7 @@ watch(
 					</Flex>
 				</Flex>
 
-				<Dropdown fullWidth>
+				<Dropdown fullWidth height="300px" verticalOverflow>
 					<Flex align="center" gap="16" :class="$style.network_selector">
 						<Flex align="center" gap="8">
 							<svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
