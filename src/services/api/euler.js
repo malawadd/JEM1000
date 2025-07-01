@@ -66,7 +66,7 @@ export const fetchWhaleBalances = async (minBalance) => {
 	const query = `
 		query GetWhaleBalances($min: BigInt!) {
 			trackingVaultBalances(where: { balance_gte: $min }, orderBy: balance, orderDirection: desc, first: 50) {
-				id mainAddress vault balance debt blockTimestamp
+				id mainAddress vault balance debt
 			}
 		}
 	`
