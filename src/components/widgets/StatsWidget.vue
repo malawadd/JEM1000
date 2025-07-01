@@ -23,7 +23,7 @@ const formatAddress = (addr) => `${addr.slice(0, 6)}...${addr.slice(-4)}`
 const getData = async () => {
 	try {
 		const minBalance = (1e6 * 1e18).toString() // 1M minimum
-		const whaleData = await fetchWhaleBalances(minBalance)
+		const whaleData = await fetchWhaleBalances("1000000000000000000000000")
 		whales.value = whaleData.trackingVaultBalances || []
 		totalWhaleBalance.value = whales.value.reduce((acc, whale) => acc + parseFloat(whale.balance), 0)
 
