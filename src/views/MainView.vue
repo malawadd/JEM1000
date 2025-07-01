@@ -1,92 +1,90 @@
 <script setup>
-import ErrorBoundary from '@/components/ErrorBoundary.vue'
-import ChainSelector from '@/components/ChainSelector.vue'
-import AllVaultsWidget from '@/components/widgets/AllVaultsWidget.vue'
-import LatestTransactionsWidget from '@/components/widgets/LatestTransactionsWidget.vue'
-import LiquidationsWidget from '@/components/widgets/LiquidationsWidget.vue'
-import VaultStatusWidget from '@/components/widgets/VaultStatusWidget.vue'
-import EarnHarvestsWidget from '@/components/widgets/EarnHarvestsWidget.vue'
-import SwapsWidget from '@/components/widgets/SwapsWidget.vue'
-import WhaleBalancesWidget from '@/components/widgets/WhaleBalancesWidget.vue'
-import NewVaultsWidget from '@/components/widgets/NewVaultsWidget.vue'
+/** Components */
+import GlobeWidget from "@/components/widgets/GlobeWidget.vue"
+import CelestiaPriceWidget from "@/components/widgets/CelestiaPriceWidget.vue"
+import BlobsFlowWidget from "@/components/widgets/BlobsFlowWidget.vue"
+import GasPriceWidget from "@/components/widgets/GasPriceWidget.vue"
+import ActiveRollupsWidget from "@/components/widgets/ActiveRollupsWidget.vue"
+import StatsWidget from "@/components/widgets/StatsWidget.vue"
 </script>
 
 <template>
-	<ErrorBoundary>
-		<Flex direction="column" gap="20" :class="$style.wrapper">
-			<!-- Header -->
-			<Flex align="center" justify="between" :class="$style.header">
-				<Flex align="center" gap="16">
-					<Text size="24" weight="700" color="primary">Euler Finance v2</Text>
-					<Text size="14" color="tertiary">Multi-Chain Dashboard</Text>
-				</Flex>
-				<ChainSelector />
-			</Flex>
+	<Flex gap="20" :class="$style.wrapper">
+		<Flex direction="column" gap="20" :class="$style.left_column">
+			<GlobeWidget />
 
-			<!-- Main Grid -->
-			<div :class="$style.grid">
-				<ErrorBoundary>
-					<AllVaultsWidget />
-				</ErrorBoundary>
-				
-				<ErrorBoundary>
-					<LatestTransactionsWidget />
-				</ErrorBoundary>
-				
-				<ErrorBoundary>
-					<LiquidationsWidget />
-				</ErrorBoundary>
-				
-				<ErrorBoundary>
-					<VaultStatusWidget />
-				</ErrorBoundary>
-				
-				<ErrorBoundary>
-					<EarnHarvestsWidget />
-				</ErrorBoundary>
-				
-				<ErrorBoundary>
-					<SwapsWidget />
-				</ErrorBoundary>
-				
-				<ErrorBoundary>
-					<WhaleBalancesWidget />
-				</ErrorBoundary>
-				
-				<ErrorBoundary>
-					<NewVaultsWidget />
-				</ErrorBoundary>
-			</div>
+			<Flex gap="20" :class="$style.bottom">
+				<CelestiaPriceWidget />
+				<BlobsFlowWidget />
+				<GasPriceWidget />
+			</Flex>
 		</Flex>
-	</ErrorBoundary>
+
+		<Flex direction="column" gap="20" :class="$style.right_column">
+			<ActiveRollupsWidget />
+			<StatsWidget />
+		</Flex>
+	</Flex>
 </template>
 
 <style module>
 .wrapper {
-	min-height: 100vh;
-	padding: 20px;
-	background: var(--app-background);
-}
-
-.header {
-	padding: 0 4px;
-}
-
-.grid {
-	display: grid;
-	grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
-	gap: 20px;
 	width: 100%;
+	height: 100%;
+
+	padding: 20px;
 }
 
-@media (max-width: 768px) {
+.left_column {
+	width: 100%;
+
+	& .bottom {
+		min-height: 220px;
+	}
+}
+
+.right_column {
+	min-width: 400px;
+	height: 100%;
+}
+
+@media (max-width: 2000px) {
+	.bottom {
+		& > div {
+			flex: 1;
+			min-width: initial;
+			width: initial;
+		}
+	}
+}
+
+@media (max-width: 1500px) {
+	.wrapper {
+		flex-direction: column;
+	}
+}
+
+@media (max-width: 1000px) {
+	.bottom {
+		flex-direction: column;
+	}
+
+	.bottom {
+		& > div {
+			gap: 16px;
+		}
+	}
+
+	.left_column {
+		& .bottom {
+			min-height: initial;
+		}
+	}
+}
+
+@media (max-width: 700px) {
 	.wrapper {
 		padding: 12px;
-	}
-	
-	.grid {
-		grid-template-columns: 1fr;
-		gap: 16px;
 	}
 }
 </style>
