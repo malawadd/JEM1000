@@ -1,7 +1,7 @@
 <script setup>
-import { ref, watch, onMounted } from "vue"
+import { ref, watch, onMounted, computed } from "vue"
 import { DateTime } from "luxon"
-import { fetchVaultStatus } from "@/services/api/euler"
+import { fetchAllEulerVaults, fetchVaultLatestTransaction, fetchVaultStatusByTxHash } from "@/services/api/vault"
 import { useAppStore } from "@/stores/app"
 
 const appStore = useAppStore()
@@ -18,19 +18,43 @@ const formatAmount = (amount) => {
 
 const getData = async () => {
 	try {
-		const data = await fetchVaultStatus()
-		const statuses = data.vaultStatuses || []
+		// Get all Euler vaults
+		const vaultsData = await fetchAllEulerVaults(60)
+		const eulerVaults = vaultsData.eulerVaults || []
 		
-		// Group by vault and get latest status for each
-		const vaultMap = new Map()
-		statuses.forEach(status => {
-			const vaultId = status.id.split('-')[0]
-			if (!vaultMap.has(vaultId) || status.blockTimestamp > vaultMap.get(vaultId).blockTimestamp) {
-				vaultMap.set(vaultId, status)
+		// For each vault, get latest status
+		const vaultsWithStatusPromises = eulerVaults.map(async (vault) => {
+			try {
+				const transfersData = await fetchVaultLatestTransaction(vault.id)
+				const latestTransfer = transfersData.transfers?.[0]
+				
+				if (latestTransfer) {
+					const statusData = await fetchVaultStatusByTxHash(latestTransfer.transactionHash)
+					const status = statusData.vaultStatuses?.[0]
+					
+					return {
+						...vault,
+						cash: status?.cash || '0',
+						totalBorrows: status?.totalBorrows || '0'
+					}
+				}
+				
+				return {
+					...vault,
+					cash: '0',
+					totalBorrows: '0'
+				}
+			} catch (error) {
+				return {
+					...vault,
+					cash: '0',
+					totalBorrows: '0'
+				}
 			}
 		})
 		
-		vaultData.value = Array.from(vaultMap.values()).slice(0, 60)
+		const results = await Promise.all(vaultsWithStatusPromises)
+		vaultData.value = results.slice(0, 60)
 		maxCash.value = Math.max(...vaultData.value.map(v => parseFloat(v.cash)))
 	} catch (error) {
 		console.error('Failed to load vault status:', error)
@@ -38,11 +62,10 @@ const getData = async () => {
 }
 
 const barColor = (cash) => {
-  // % of the largest-cash vault
-  const pct = (parseFloat(cash) * 100) / maxCash.value
-  if (pct > 66)  return '#12D87B'   // big ⇒ bright-green
-  if (pct > 33)  return '#F4C430'   // mid ⇒ amber
-  return '#FF4E4F'                  // small ⇒ red
+	const pct = (parseFloat(cash) * 100) / maxCash.value
+	if (pct > 66) return '#12D87B'
+	if (pct > 33) return '#F4C430'
+	return '#FF4E4F'
 }
 
 onMounted(getData)
@@ -66,12 +89,12 @@ watch(() => appStore.network, getData)
 		<Flex gap="8" :class="$style.vaults">
 			<Flex v-for="vault in vaultData" align="end" :class="$style.vault">
 				<div
-  :style="{
-    height: `${vault.cash ? (parseFloat(vault.cash) * 100) / maxCash : 5}%`,
-    background: barColor(vault.cash)
-  }"
-  :class="$style.bar"
-/>
+					:style="{
+						height: `${vault.cash ? (parseFloat(vault.cash) * 100) / maxCash : 5}%`,
+						background: barColor(vault.cash)
+					}"
+					:class="$style.bar"
+				/>
 			</Flex>
 		</Flex>
 	</Flex>

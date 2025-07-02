@@ -1,6 +1,6 @@
 <script setup>
 import { ref, onMounted, watch, computed } from "vue"
-import { fetchVaultDetails, fetchVaultStatus } from "@/services/api/vault"
+import { fetchVaultDetails, fetchVaultLatestTransaction, fetchVaultStatusByTxHash } from "@/services/api/vault"
 import { useAppStore } from "@/stores/app"
 
 const props = defineProps({
@@ -9,7 +9,7 @@ const props = defineProps({
 
 const appStore = useAppStore()
 const vaultInfo = ref(null)
-const vaultStatus = ref([])
+const vaultStatus = ref(null)
 const loading = ref(true)
 
 const formatAmount = (amount) => {
@@ -23,13 +23,21 @@ const formatAmount = (amount) => {
 const loadVaultData = async () => {
 	loading.value = true
 	try {
-		const [detailsData, statusData] = await Promise.all([
-			fetchVaultDetails(props.vaultId),
-			fetchVaultStatus(props.vaultId)
-		])
-		
+		// Get vault details
+		const detailsData = await fetchVaultDetails(props.vaultId)
 		vaultInfo.value = detailsData.eulerVaults?.[0] || null
-		vaultStatus.value = statusData.vaultStatuses || []
+		
+		if (vaultInfo.value) {
+			// Get latest transaction hash from transfers
+			const transfersData = await fetchVaultLatestTransaction(props.vaultId)
+			const latestTransfer = transfersData.transfers?.[0]
+			
+			if (latestTransfer) {
+				// Get vault status using the transaction hash
+				const statusData = await fetchVaultStatusByTxHash(latestTransfer.transactionHash)
+				vaultStatus.value = statusData.vaultStatuses?.[0] || null
+			}
+		}
 	} catch (error) {
 		console.error('Failed to load vault overview:', error)
 	} finally {
@@ -41,7 +49,13 @@ onMounted(loadVaultData)
 watch(() => appStore.network, loadVaultData)
 watch(() => props.vaultId, loadVaultData)
 
-const latestStatus = computed(() => vaultStatus.value[0] || {})
+const utilizationRate = computed(() => {
+	if (!vaultStatus.value) return 0
+	const cash = parseFloat(vaultStatus.value.cash || '0')
+	const borrows = parseFloat(vaultStatus.value.totalBorrows || '0')
+	if (cash === 0) return 0
+	return ((borrows / cash) * 100).toFixed(2)
+})
 </script>
 
 <template>
@@ -83,29 +97,46 @@ const latestStatus = computed(() => vaultStatus.value[0] || {})
 				<div :class="$style.metricCard">
 					<Text size="14" weight="600" color="green">TOTAL CASH</Text>
 					<Text size="24" weight="700" color="green" mono>
-						{{ formatAmount(latestStatus.cash || '0') }}
+						{{ formatAmount(vaultStatus?.cash || '0') }}
 					</Text>
 				</div>
 
 				<div :class="$style.metricCard">
 					<Text size="14" weight="600" color="orange">TOTAL BORROWS</Text>
 					<Text size="24" weight="700" color="orange" mono>
-						{{ formatAmount(latestStatus.totalBorrows || '0') }}
+						{{ formatAmount(vaultStatus?.totalBorrows || '0') }}
 					</Text>
 				</div>
 
 				<div :class="$style.metricCard">
 					<Text size="14" weight="600" color="purple">TOTAL SHARES</Text>
 					<Text size="24" weight="700" color="purple" mono>
-						{{ formatAmount(latestStatus.totalShares || '0') }}
+						{{ formatAmount(vaultStatus?.totalShares || '0') }}
 					</Text>
 				</div>
 
 				<div :class="$style.metricCard">
 					<Text size="14" weight="600" color="blue">INTEREST RATE</Text>
 					<Text size="24" weight="700" color="blue" mono>
-						{{ ((parseFloat(latestStatus.interestRate || '0') / 1e18) * 100).toFixed(2) }}%
+						{{ ((parseFloat(vaultStatus?.interestRate || '0') / 1e18) * 100).toFixed(2) }}%
 					</Text>
+				</div>
+			</div>
+
+			<!-- Utilization Card -->
+			<div :class="$style.utilizationCard">
+				<Text size="16" weight="700" color="primary">UTILIZATION RATE</Text>
+				<div :class="$style.utilizationMeter">
+					<div :class="$style.meterTrack">
+						<div 
+							:class="$style.meterFill"
+							:style="{ 
+								width: `${Math.min(100, utilizationRate)}%`,
+								background: utilizationRate > 90 ? '#ff0000' : utilizationRate > 70 ? '#ff6600' : '#00ff9d'
+							}"
+						/>
+					</div>
+					<Text size="20" weight="700" color="primary" mono>{{ utilizationRate }}%</Text>
 				</div>
 			</div>
 
@@ -181,6 +212,37 @@ const latestStatus = computed(() => vaultStatus.value[0] || {})
 	border-radius: 8px;
 	padding: 20px;
 	text-align: center;
+}
+
+.utilizationCard {
+	background: linear-gradient(135deg, rgba(0, 255, 255, 0.05) 0%, rgba(0, 0, 0, 0.8) 100%);
+	border: 1px solid rgba(0, 255, 255, 0.2);
+	border-radius: 8px;
+	padding: 24px;
+	text-align: center;
+}
+
+.utilizationMeter {
+	margin: 16px 0;
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+	align-items: center;
+}
+
+.meterTrack {
+	width: 100%;
+	max-width: 300px;
+	height: 12px;
+	background: rgba(255, 255, 255, 0.1);
+	border-radius: 6px;
+	overflow: hidden;
+}
+
+.meterFill {
+	height: 100%;
+	border-radius: 6px;
+	transition: all 0.3s ease;
 }
 
 .capsCard {

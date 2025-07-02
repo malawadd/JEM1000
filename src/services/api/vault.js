@@ -1,5 +1,42 @@
 import { executeGraphQLQuery } from "@/services/config"
 
+// Get all Euler vaults
+export const fetchAllEulerVaults = async (limit = 100) => {
+	const query = `
+		query GetAllEulerVaults($limit: Int!) {
+			eulerVaults(first: $limit, orderBy: blockTimestamp, orderDirection: desc) {
+				id name symbol decimals borrowCap supplyCap asset oracle creator
+				blockNumber blockTimestamp transactionHash
+			}
+		}
+	`
+	return executeGraphQLQuery(query, { limit })
+}
+
+// Get latest transaction hash for a vault from transfers
+export const fetchVaultLatestTransaction = async (vaultId) => {
+	const query = `
+		query GetVaultLatestTransaction($vault: Bytes!) {
+			transfers(where: { vault: $vault }, first: 1, orderBy: blockTimestamp, orderDirection: desc) {
+				transactionHash blockTimestamp
+			}
+		}
+	`
+	return executeGraphQLQuery(query, { vault: vaultId })
+}
+
+// Get vault status by transaction hash
+export const fetchVaultStatusByTxHash = async (transactionHash) => {
+	const query = `
+		query GetVaultStatusByTxHash($txHash: Bytes!) {
+			vaultStatuses(where: { transactionHash: $txHash }) {
+				totalShares totalBorrows interestRate interestAccumulator accumulatedFees cash
+			}
+		}
+	`
+	return executeGraphQLQuery(query, { txHash: transactionHash })
+}
+
 // Vault-specific queries based on the schema
 export const fetchVaultDetails = async (vaultId) => {
 	const query = `
@@ -10,8 +47,6 @@ export const fetchVaultDetails = async (vaultId) => {
 			}
 		}
 	`
-	console.log("fetchVaultDetails", "vaultId", vaultId)
-	console.log("valut information", executeGraphQLQuery(query, { vaultId }))
 	return executeGraphQLQuery(query, { vaultId })
 }
 
