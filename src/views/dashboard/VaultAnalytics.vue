@@ -41,6 +41,8 @@ const loadVaultsWithStatus = async () => {
 					// Get vault status using the transaction hash
 					const statusData = await fetchVaultStatusByTxHash(latestTransfer.transactionHash)
 					const status = statusData.vaultStatuses?.[0]
+          console.log("Loading vault status:", status)
+          console.log("Loading vault statusData:", statusData)
 					
 					return {
 						...vault,
