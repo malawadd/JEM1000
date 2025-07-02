@@ -37,6 +37,14 @@ const getData = async () => {
 	}
 }
 
+const barColor = (cash) => {
+  // % of the largest-cash vault
+  const pct = (parseFloat(cash) * 100) / maxCash.value
+  if (pct > 66)  return '#12D87B'   // big ⇒ bright-green
+  if (pct > 33)  return '#F4C430'   // mid ⇒ amber
+  return '#FF4E4F'                  // small ⇒ red
+}
+
 onMounted(getData)
 watch(() => appStore.network, getData)
 </script>
@@ -58,9 +66,12 @@ watch(() => appStore.network, getData)
 		<Flex gap="8" :class="$style.vaults">
 			<Flex v-for="vault in vaultData" align="end" :class="$style.vault">
 				<div
-					:style="{ height: `${vault.cash ? (parseFloat(vault.cash) * 100) / maxCash : 5}%` }"
-					:class="[$style.bar, vault.cash && $style.active]"
-				/>
+  :style="{
+    height: `${vault.cash ? (parseFloat(vault.cash) * 100) / maxCash : 5}%`,
+    background: barColor(vault.cash)
+  }"
+  :class="$style.bar"
+/>
 			</Flex>
 		</Flex>
 	</Flex>

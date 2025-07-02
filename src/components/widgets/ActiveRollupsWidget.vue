@@ -17,7 +17,7 @@ const formatAmount = (amount) => {
 
 const getData = async () => {
 	try {
-		const since = Math.floor(Date.now() / 1000) - (24 * 60 * 60) // 24h ago
+		const since = Math.floor(Date.now() / 1000) - (24 * 60 * 60 * 7) // 24h ago
 		const data = await fetchLiquidations(since.toString())
 		liquidations.value = data.liquidates || []
 		total.value = liquidations.value.length
@@ -33,7 +33,7 @@ watch(() => appStore.network, getData)
 
 <template>
 	<Flex direction="column" gap="24" :class="$style.wrapper">
-		<Text size="16" weight="600" color="primary">Liquidations (24h)</Text>
+		<Text size="16" weight="600" color="primary">Liquidations (7d)</Text>
 
 		<Flex align="center" gap="40">
 			<Flex direction="column" gap="8">
