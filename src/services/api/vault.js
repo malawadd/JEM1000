@@ -10,6 +10,8 @@ export const fetchVaultDetails = async (vaultId) => {
 			}
 		}
 	`
+	console.log("fetchVaultDetails", "vaultId", vaultId)
+	console.log("valut information", executeGraphQLQuery(query, { vaultId }))
 	return executeGraphQLQuery(query, { vaultId })
 }
 

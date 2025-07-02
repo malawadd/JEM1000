@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted, watch } from "vue"
+import { ref, onMounted, watch,computed } from "vue"
 import { fetchVaultLiquidations } from "@/services/api/vault"
 import { useAppStore } from "@/stores/app"
 import { DateTime } from "luxon"
