@@ -78,7 +78,7 @@ watch(
 			<Flex direction="column" gap="20">
 				<Flex direction="column" gap="12">
 					<svg width="348" height="22" viewBox="0 0 348 22" fill="none" xmlns="http://www.w3.org/2000/svg">
-						<text x="10" y="16" fill="white" font-size="14" font-weight="600">Euler Finance Dashboard</text>
+						<text x="10" y="16" fill="#00ff9d" font-size="14" font-weight="700" font-family="monospace">EULER FINANCE DASHBOARD</text>
 					</svg>
 
 					<Flex align="center" gap="12">
@@ -87,7 +87,7 @@ watch(
 
 							<Flex align="center" gap="4">
 								<Icon name="zap-circle" size="14" color="green" />
-								<Text size="14" weight="600" color="green"> Connected </Text>
+								<Text size="14" weight="600" color="green"> CONNECTED </Text>
 							</Flex>
 						</Flex>
 
@@ -97,35 +97,43 @@ watch(
 							<Text size="14" weight="500" color="tertiary"> Network: </Text>
 							<Flex align="center" gap="4">
 								<Icon name="check-circle" size="14" color="secondary" />
-								<Text size="14" weight="600" color="secondary" style="text-transform: capitalize"> {{ appStore.network }} </Text>
+								<Text size="14" weight="600" color="secondary" style="text-transform: uppercase"> {{ appStore.network }} </Text>
 							</Flex>
 						</Flex>
 					</Flex>
 				</Flex>
 
-				<Dropdown fullWidth height="300px" verticalOverflow>
-					<Flex align="center" gap="16" :class="$style.network_selector">
-						<Flex align="center" gap="8">
-							<svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
-								<circle cx="7" cy="7" r="6" :fill="appStore.network === 'mainnet' ? '#4CDC89' : 'var(--orange)'" />
-							</svg>
-							<Text size="14" weight="600" color="primary" style="text-transform: capitalize">
-								Euler {{ appStore.network }}
-							</Text>
+				<Flex align="center" gap="12">
+					<Dropdown fullWidth height="300px" verticalOverflow>
+						<Flex align="center" gap="16" :class="$style.network_selector">
+							<Flex align="center" gap="8">
+								<svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+									<circle cx="7" cy="7" r="6" :fill="appStore.network === 'mainnet' ? '#00ff9d' : '#00ffff'" />
+								</svg>
+								<Text size="14" weight="600" color="primary" style="text-transform: uppercase">
+									{{ appStore.network }}
+								</Text>
+							</Flex>
+
+							<Icon name="chevron" size="16" color="tertiary" />
 						</Flex>
 
-						<Icon name="chevron" size="16" color="tertiary" />
-					</Flex>
+						<template #popup>
+							<DropdownItem v-for="network in appStore.networks" :key="network.key" @click="appStore.network = network.key">
+								<Flex align="center" gap="8">
+									<Icon :name="appStore.network === network.key ? 'check' : ''" size="14" color="secondary" /> 
+									{{ network.name }}
+								</Flex>
+							</DropdownItem>
+						</template>
+					</Dropdown>
 
-					<template #popup>
-						<DropdownItem v-for="network in appStore.networks" :key="network.key" @click="appStore.network = network.key">
-							<Flex align="center" gap="8">
-								<Icon :name="appStore.network === network.key ? 'check' : ''" size="14" color="secondary" /> 
-								{{ network.name }}
-							</Flex>
-						</DropdownItem>
-					</template>
-				</Dropdown>
+					<!-- Dashboard Link -->
+					<router-link to="/dashboard" :class="$style.dashboardLink">
+						<Icon name="arrow-top-right" size="16" color="primary" />
+						<Text size="12" weight="700" color="primary">DASHBOARD</Text>
+					</router-link>
+				</Flex>
 			</Flex>
 
 			<Feed :txs="txs" />
@@ -144,7 +152,8 @@ watch(
 	height: 100%;
 
 	overflow: hidden;
-	background: var(--card-background);
+	background: linear-gradient(135deg, rgba(0, 255, 157, 0.02) 0%, rgba(0, 0, 0, 0.95) 50%, rgba(255, 0, 255, 0.02) 100%);
+	border: 1px solid rgba(0, 255, 157, 0.1);
 
 	padding: 20px;
 }
@@ -172,16 +181,16 @@ watch(
 
 	border-radius: 50%;
 
-	box-shadow: #1f87dd52 -0.8em 0 5.8em -1.5em inset;
+	box-shadow: #00ff9d52 -0.8em 0 5.8em -1.5em inset;
 
 	animation: fhl 20s ease infinite;
 	animation-delay: 10s;
 }
 .atm {
-	box-shadow: #2374ffe0 -2em 0 3em -0.5em inset, #000e1ad9 -3em 0 4em -1em inset, #007aec30 -60em 0 20em -40em inset;
+	box-shadow: #00ff9de0 -2em 0 3em -0.5em inset, #000e1ad9 -3em 0 4em -1em inset, #00ff9d30 -60em 0 20em -40em inset;
 	mix-blend-mode: color-dodge;
-	color: #4c86e99e;
-	filter: blur(0.2em) drop-shadow(0.3em 0 4.5em);
+	color: #00ff9d9e;
+	filter: blur(0.2em) drop-shadow(0.3em 0 4.5em #00ff9d);
 	touch-action: none;
 }
 
@@ -191,7 +200,7 @@ watch(
 	display: block;
 	height: 100%;
 	border-radius: 50%;
-	box-shadow: #2d8de7 -1.5em 0 1em -1em inset;
+	box-shadow: #00ff9d -1.5em 0 1em -1em inset;
 	mix-blend-mode: color-dodge;
 }
 .atm::after {
@@ -237,7 +246,8 @@ watch(
 	height: 6px;
 
 	border-radius: 50%;
-	background: var(--op-10);
+	background: rgba(0, 255, 157, 0.3);
+	box-shadow: 0 0 8px rgba(0, 255, 157, 0.5);
 }
 
 .network_selector {
@@ -245,7 +255,8 @@ watch(
 	height: 38px;
 
 	border-radius: 10px;
-	border: 2px solid var(--op-5);
+	border: 2px solid rgba(0, 255, 157, 0.2);
+	background: rgba(0, 0, 0, 0.6);
 	cursor: pointer;
 
 	padding: 0 14px;
@@ -253,12 +264,31 @@ watch(
 	transition: all 0.2s ease;
 
 	&:hover {
-		border: 2px solid var(--op-10);
+		border: 2px solid rgba(0, 255, 157, 0.4);
+		box-shadow: 0 0 15px rgba(0, 255, 157, 0.2);
 	}
 
 	&:active {
-		border: 2px solid var(--op-15);
-		background: var(--op-5);
+		border: 2px solid rgba(0, 255, 157, 0.6);
+		background: rgba(0, 255, 157, 0.05);
 	}
+}
+
+.dashboardLink {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	padding: 8px 12px;
+	background: linear-gradient(135deg, rgba(0, 255, 157, 0.1) 0%, rgba(255, 0, 255, 0.1) 100%);
+	border: 1px solid rgba(0, 255, 157, 0.3);
+	border-radius: 6px;
+	transition: all 0.2s ease;
+	text-decoration: none;
+}
+
+.dashboardLink:hover {
+	background: linear-gradient(135deg, rgba(0, 255, 157, 0.2) 0%, rgba(255, 0, 255, 0.2) 100%);
+	box-shadow: 0 0 20px rgba(0, 255, 157, 0.3);
+	transform: translateY(-1px);
 }
 </style>
