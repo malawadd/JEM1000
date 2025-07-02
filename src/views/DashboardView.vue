@@ -2,12 +2,22 @@
 import { ref, computed } from "vue"
 import { useRoute, useRouter } from "vue-router"
 import { useAppStore } from "@/stores/app"
+import { Dropdown, DropdownItem } from "@/components/ui/Dropdown"
 
 const route = useRoute()
 const router = useRouter()
 const appStore = useAppStore()
 
 const sidebarOpen = ref(true)
+const isMobile = ref(window.innerWidth <= 1024)
+
+// Listen for window resize
+window.addEventListener('resize', () => {
+	isMobile.value = window.innerWidth <= 1024
+	if (isMobile.value) {
+		sidebarOpen.value = false
+	}
+})
 
 const dashboardPages = [
 	{ key: "swap-positions", name: "SWAP POSITIONS", icon: "arrow-top-right" },
@@ -24,23 +34,47 @@ const currentPage = computed(() => {
 
 const navigateToPage = (pageKey) => {
 	router.push(`/dashboard/${pageKey}`)
+	// Close sidebar on mobile after navigation
+	if (isMobile.value) {
+		sidebarOpen.value = false
+	}
 }
 
 const toggleSidebar = () => {
 	sidebarOpen.value = !sidebarOpen.value
 }
+
+const handleNetworkChange = (networkKey) => {
+	appStore.network = networkKey
+}
 </script>
 
 <template>
 	<div :class="$style.dashboard">
+		<!-- Mobile Overlay -->
+		<div 
+			v-if="isMobile && sidebarOpen" 
+			:class="$style.overlay" 
+			@click="sidebarOpen = false"
+		/>
+
+		<!-- Mobile Menu Button -->
+		<button 
+			v-if="isMobile" 
+			@click="toggleSidebar" 
+			:class="$style.mobileMenuBtn"
+		>
+			<Icon name="chevron" size="20" color="primary" :rotate="sidebarOpen ? 90 : 0" />
+		</button>
+
 		<!-- Sidebar -->
-		<aside :class="[$style.sidebar, !sidebarOpen && $style.collapsed]">
+		<aside :class="[$style.sidebar, !sidebarOpen && $style.collapsed, isMobile && $style.mobile]">
 			<div :class="$style.sidebarHeader">
 				<Flex align="center" gap="12">
 					<Icon name="logo" size="24" color="primary" />
 					<Text v-if="sidebarOpen" size="16" weight="700" color="primary">EULER ANALYTICS</Text>
 				</Flex>
-				<button @click="toggleSidebar" :class="$style.toggleBtn">
+				<button v-if="!isMobile" @click="toggleSidebar" :class="$style.toggleBtn">
 					<Icon name="chevron" size="16" color="secondary" :rotate="sidebarOpen ? 180 : 0" />
 				</button>
 			</div>
@@ -91,7 +125,11 @@ const toggleSidebar = () => {
 							</Flex>
 
 							<template #popup>
-								<DropdownItem v-for="network in appStore.networks" :key="network.key" @click="appStore.network = network.key">
+								<DropdownItem 
+									v-for="network in appStore.networks" 
+									:key="network.key" 
+									@click="handleNetworkChange(network.key)"
+								>
 									<Flex align="center" gap="8">
 										<Icon :name="appStore.network === network.key ? 'check' : ''" size="14" color="secondary" /> 
 										{{ network.name }}
@@ -100,7 +138,7 @@ const toggleSidebar = () => {
 							</template>
 						</Dropdown>
 
-						<!-- Dashboard Link -->
+						<!-- Home Link -->
 						<router-link to="/" :class="$style.homeLink">
 							<Icon name="arrow-top-right" size="16" color="secondary" />
 							<Text size="12" weight="700" color="secondary">MAIN VIEW</Text>
@@ -123,6 +161,34 @@ const toggleSidebar = () => {
 	height: 100vh;
 	background: var(--app-background);
 	overflow: hidden;
+	position: relative;
+}
+
+.overlay {
+	position: fixed;
+	top: 0;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	background: rgba(0, 0, 0, 0.7);
+	z-index: 999;
+}
+
+.mobileMenuBtn {
+	position: fixed;
+	top: 20px;
+	left: 20px;
+	z-index: 1001;
+	background: linear-gradient(135deg, rgba(0, 255, 157, 0.2) 0%, rgba(0, 0, 0, 0.8) 100%);
+	border: 2px solid rgba(0, 255, 157, 0.3);
+	border-radius: 8px;
+	padding: 8px;
+	transition: all 0.2s ease;
+}
+
+.mobileMenuBtn:hover {
+	background: linear-gradient(135deg, rgba(0, 255, 157, 0.3) 0%, rgba(0, 0, 0, 0.9) 100%);
+	box-shadow: 0 0 20px rgba(0, 255, 157, 0.3);
 }
 
 .sidebar {
@@ -131,12 +197,26 @@ const toggleSidebar = () => {
 	border-right: 2px solid rgba(0, 255, 157, 0.2);
 	display: flex;
 	flex-direction: column;
-	transition: width 0.3s ease;
+	transition: all 0.3s ease;
 	position: relative;
+	z-index: 1000;
 }
 
 .sidebar.collapsed {
 	width: 70px;
+}
+
+.sidebar.mobile {
+	position: fixed;
+	height: 100vh;
+	top: 0;
+	left: 0;
+	transform: translateX(0);
+}
+
+.sidebar.mobile.collapsed {
+	transform: translateX(-100%);
+	width: 280px;
 }
 
 .sidebarHeader {
@@ -163,6 +243,7 @@ const toggleSidebar = () => {
 .navigation {
 	flex: 1;
 	padding: 20px 0;
+	overflow-y: auto;
 }
 
 .navSection {
@@ -234,6 +315,7 @@ const toggleSidebar = () => {
 	padding: 0 12px;
 	cursor: pointer;
 	transition: all 0.2s ease;
+	min-width: 140px;
 }
 
 .networkSelector:hover {
@@ -275,15 +357,26 @@ const toggleSidebar = () => {
 }
 
 @media (max-width: 1024px) {
-	.sidebar {
-		position: absolute;
-		z-index: 1000;
-		height: 100%;
+	.main {
+		width: 100%;
 	}
 	
-	.sidebar.collapsed {
-		transform: translateX(-100%);
-		width: 280px;
+	.topbar {
+		padding-left: 80px;
+	}
+	
+	.content {
+		padding: 16px;
+	}
+}
+
+@media (max-width: 768px) {
+	.homeLink span {
+		display: none;
+	}
+	
+	.networkSelector {
+		min-width: 120px;
 	}
 }
 </style>
