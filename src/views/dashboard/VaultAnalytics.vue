@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted, watch } from "vue"
+import { ref, onMounted, watch, computed  } from "vue"
 import { useRouter } from "vue-router"
 import { fetchAllEulerVaults, fetchVaultLatestTransaction, fetchVaultStatusByTxHash } from "@/services/api/vault"
 import { useAppStore } from "@/stores/app"
