@@ -1,34 +1,46 @@
-<script setup>
-import { ref, onMounted, watch } from "vue"
+<script>
+import { ref, onMounted, watch, defineComponent } from "vue"
 import { fetchLatestTransactions } from "@/services/api/euler"
 import { useAppStore } from "@/stores/app"
 
-const appStore = useAppStore()
-const deposits = ref([])
-const borrows = ref([])
-const withdraws = ref([])
+export default defineComponent({
+	name: 'LendingOverview',
+	setup() {
+		const appStore = useAppStore()
+		const deposits = ref([])
+		const borrows = ref([])
+		const withdraws = ref([])
 
-const formatAmount = (amount) => {
-	const num = parseFloat(amount) / 1e18
-	if (num > 1e9) return `${(num/1e9).toFixed(2)}B`
-	if (num > 1e6) return `${(num/1e6).toFixed(2)}M`
-	if (num > 1e3) return `${(num/1e3).toFixed(2)}K`
-	return num.toFixed(2)
-}
+		const formatAmount = (amount) => {
+			const num = parseFloat(amount) / 1e18
+			if (num > 1e9) return `${(num/1e9).toFixed(2)}B`
+			if (num > 1e6) return `${(num/1e6).toFixed(2)}M`
+			if (num > 1e3) return `${(num/1e3).toFixed(2)}K`
+			return num.toFixed(2)
+		}
 
-const loadData = async () => {
-	try {
-		const data = await fetchLatestTransactions(100)
-		deposits.value = data.deposits || []
-		borrows.value = data.borrows || []
-		withdraws.value = data.withdraws || []
-	} catch (error) {
-		console.error('Failed to load lending data:', error)
+		const loadData = async () => {
+			try {
+				const data = await fetchLatestTransactions(100)
+				deposits.value = data.deposits || []
+				borrows.value = data.borrows || []
+				withdraws.value = data.withdraws || []
+			} catch (error) {
+				console.error('Failed to load lending data:', error)
+			}
+		}
+
+		onMounted(loadData)
+		watch(() => appStore.network, loadData)
+
+		return {
+			deposits,
+			borrows,
+			withdraws,
+			formatAmount
+		}
 	}
-}
-
-onMounted(loadData)
-watch(() => appStore.network, loadData)
+})
 </script>
 
 <template>
