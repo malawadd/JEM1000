@@ -116,17 +116,6 @@ export const fetchVaultLiquidations = async (vaultId, limit = 50) => {
 	return executeGraphQLQuery(query, { vault: vaultId, limit })
 }
 
-export const fetchVaultStatus = async (vaultId) => {
-	const query = `
-		query GetVaultStatus($vaultId: String!) {
-			vaultStatuses(where: { id_contains: $vaultId }, first: 10, orderBy: blockTimestamp, orderDirection: desc) {
-				id totalShares totalBorrows cash accumulatedFees interestRate blockTimestamp
-			}
-		}
-	`
-	return executeGraphQLQuery(query, { vaultId })
-}
-
 export const fetchVaultInterestAccrued = async (vaultId, limit = 20) => {
 	const query = `
 		query GetVaultInterestAccrued($vault: Bytes!, $limit: Int!) {

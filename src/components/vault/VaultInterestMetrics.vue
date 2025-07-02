@@ -1,6 +1,6 @@
 <script setup>
 import { ref, onMounted, watch, computed } from "vue"
-import { fetchVaultInterestAccrued, fetchVaultStatus } from "@/services/api/vault"
+import { fetchVaultInterestAccrued, fetchVaultLatestTransaction, fetchVaultStatusByTxHash } from "@/services/api/vault"
 import { useAppStore } from "@/stores/app"
 import { DateTime } from "luxon"
 
@@ -10,7 +10,7 @@ const props = defineProps({
 
 const appStore = useAppStore()
 const interestEvents = ref([])
-const vaultStatus = ref([])
+const vaultStatus = ref(null)
 
 const formatAmount = (amount) => {
 	const num = parseFloat(amount) / 1e18
@@ -25,13 +25,18 @@ const formatTime = (timestamp) => {
 
 const loadInterestData = async () => {
 	try {
-		const [interestData, statusData] = await Promise.all([
-			fetchVaultInterestAccrued(props.vaultId, 30),
-			fetchVaultStatus(props.vaultId)
-		])
-		
+		// Get interest accrued events
+		const interestData = await fetchVaultInterestAccrued(props.vaultId, 30)
 		interestEvents.value = interestData.interestAccrueds || []
-		vaultStatus.value = statusData.vaultStatuses || []
+		
+		// Get latest vault status using the correct approach
+		const transfersData = await fetchVaultLatestTransaction(props.vaultId)
+		const latestTransfer = transfersData.transfers?.[0]
+		
+		if (latestTransfer) {
+			const statusData = await fetchVaultStatusByTxHash(latestTransfer.transactionHash)
+			vaultStatus.value = statusData.vaultStatuses?.[0] || null
+		}
 	} catch (error) {
 		console.error('Failed to load vault interest data:', error)
 	}
@@ -41,13 +46,12 @@ onMounted(loadInterestData)
 watch(() => appStore.network, loadInterestData)
 watch(() => props.vaultId, loadInterestData)
 
-const latestStatus = computed(() => vaultStatus.value[0] || {})
 const totalInterestAccrued = computed(() => {
 	return interestEvents.value.reduce((acc, event) => acc + parseFloat(event.assets), 0)
 })
 
 const currentInterestRate = computed(() => {
-	return ((parseFloat(latestStatus.value?.interestRate || '0') / 1e18) * 100).toFixed(4)
+	return ((parseFloat(vaultStatus.value?.interestRate || '0') / 1e18) * 100).toFixed(4)
 })
 </script>
 
@@ -76,27 +80,8 @@ const currentInterestRate = computed(() => {
 				<div :class="$style.feesCard">
 					<Text size="14" weight="600" color="orange">ACCUMULATED FEES</Text>
 					<Text size="28" weight="700" color="orange" mono>
-						{{ formatAmount(latestStatus.accumulatedFees || '0') }}
+						{{ formatAmount(vaultStatus?.accumulatedFees || '0') }}
 					</Text>
-				</div>
-			</div>
-
-			<!-- Interest History Chart Placeholder -->
-			<div :class="$style.chartCard">
-				<Text size="16" weight="700" color="primary">INTEREST RATE HISTORY</Text>
-				<div :class="$style.chartPlaceholder">
-					<div :class="$style.chartBars">
-						<div 
-							v-for="(status, index) in vaultStatus.slice(0, 20)" 
-							:key="status.id"
-							:class="$style.chartBar"
-							:style="{ 
-								height: `${Math.max(10, (parseFloat(status.interestRate) / 1e18) * 1000)}%`,
-								background: `hsl(${120 + index * 10}, 70%, 50%)`
-							}"
-						/>
-					</div>
-					<Text size="12" weight="500" color="tertiary">Interest rate over time</Text>
 				</div>
 			</div>
 
@@ -179,39 +164,6 @@ const currentInterestRate = computed(() => {
 	border-radius: 8px;
 	padding: 20px;
 	text-align: center;
-}
-
-.chartCard {
-	background: rgba(0, 0, 0, 0.6);
-	border: 1px solid rgba(0, 255, 255, 0.2);
-	border-radius: 8px;
-	padding: 24px;
-}
-
-.chartPlaceholder {
-	margin-top: 16px;
-	height: 200px;
-	display: flex;
-	flex-direction: column;
-	align-items: center;
-	justify-content: center;
-	gap: 16px;
-}
-
-.chartBars {
-	display: flex;
-	align-items: end;
-	gap: 2px;
-	height: 150px;
-	width: 100%;
-	max-width: 400px;
-}
-
-.chartBar {
-	flex: 1;
-	min-height: 10px;
-	border-radius: 2px 2px 0 0;
-	opacity: 0.8;
 }
 
 .eventsList {
