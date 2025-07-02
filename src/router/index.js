@@ -8,6 +8,7 @@ import LendingOverview from "@/views/dashboard/LendingOverview.vue"
 import VaultAnalytics from "@/views/dashboard/VaultAnalytics.vue"
 import EarnHarvests from "@/views/dashboard/EarnHarvests.vue"
 import WhaleTracking from "@/views/dashboard/WhaleTracking.vue"
+import VaultDetail from "@/views/dashboard/VaultDetail.vue"
 
 const router = createRouter({
 	history: createWebHistory(import.meta.env.BASE_URL),
@@ -42,6 +43,12 @@ const router = createRouter({
 					path: "vault-analytics",
 					name: "vault-analytics",
 					component: VaultAnalytics,
+				},
+				{
+					path: "vault/:vaultId",
+					name: "vault-detail",
+					component: VaultDetail,
+					props: true,
 				},
 				{
 					path: "earn-harvests",

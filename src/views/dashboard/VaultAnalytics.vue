@@ -1,9 +1,11 @@
 <script setup>
 import { ref, onMounted, watch } from "vue"
+import { useRouter } from "vue-router"
 import { fetchVaultStatus } from "@/services/api/euler"
 import { useAppStore } from "@/stores/app"
 
 const appStore = useAppStore()
+const router = useRouter()
 const vaults = ref([])
 
 const formatAmount = (amount) => {
@@ -12,6 +14,11 @@ const formatAmount = (amount) => {
 	if (num > 1e6) return `${(num/1e6).toFixed(2)}M`
 	if (num > 1e3) return `${(num/1e3).toFixed(2)}K`
 	return num.toFixed(2)
+}
+
+const navigateToVault = (vaultId) => {
+	const cleanVaultId = vaultId.split('-')[0] // Extract vault address from composite ID
+	router.push(`/dashboard/vault/${cleanVaultId}`)
 }
 
 const loadVaults = async () => {
@@ -54,11 +61,19 @@ watch(() => appStore.network, loadVaults)
 			</div>
 
 			<div :class="$style.vaultGrid">
-				<div v-for="vault in vaults.slice(0, 12)" :key="vault.id" :class="$style.vaultCard">
+				<div 
+					v-for="vault in vaults.slice(0, 12)" 
+					:key="vault.id" 
+					:class="$style.vaultCard"
+					@click="navigateToVault(vault.id)"
+				>
 					<Flex direction="column" gap="12">
-						<Text size="12" weight="700" color="tertiary" mono>
-							VAULT {{ vault.id.slice(0, 8) }}...
-						</Text>
+						<Flex align="center" justify="between">
+							<Text size="12" weight="700" color="tertiary" mono>
+								VAULT {{ vault.id.slice(0, 8) }}...
+							</Text>
+							<Icon name="arrow-top-right" size="12" color="secondary" />
+						</Flex>
 						
 						<Flex justify="between">
 							<Text size="11" weight="500" color="secondary">CASH</Text>
@@ -119,11 +134,13 @@ watch(() => appStore.network, loadVaults)
 	border-radius: 6px;
 	padding: 16px;
 	transition: all 0.2s ease;
+	cursor: pointer;
 }
 
 .vaultCard:hover {
 	border-color: rgba(0, 255, 157, 0.4);
 	box-shadow: 0 0 20px rgba(0, 255, 157, 0.1);
+	transform: translateY(-2px);
 }
 
 .utilizationBar {
