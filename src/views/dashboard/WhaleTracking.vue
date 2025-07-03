@@ -17,7 +17,7 @@ const formatAmount = (amount) => {
 const loadWhales = async () => {
 	try {
 		const minBalance = (1e6 * 1e18).toString() // 1M minimum
-		const data = await fetchWhaleBalances(minBalance)
+		const data = await fetchWhaleBalances("1000000000000000000000000")
 		whales.value = data.trackingVaultBalances || []
 	} catch (error) {
 		console.error('Failed to load whale data:', error)
