@@ -13,6 +13,7 @@ import TransactionDetail from "@/views/dashboard/TransactionDetail.vue"
 import TransactionSearch from "@/views/dashboard/TransactionSearch.vue"
 import AccountDetail from "@/views/dashboard/AccountDetail.vue"
 import AccountSearch from "@/views/dashboard/AccountSearch.vue"
+import ProtocolOverview from "@/views/dashboard/ProtocolOverview.vue"
 
 const router = createRouter({
 	history: createWebHistory(import.meta.env.BASE_URL),
@@ -26,8 +27,13 @@ const router = createRouter({
 			path: "/dashboard",
 			name: "dashboard",
 			component: DashboardView,
-			redirect: "/dashboard/swap-positions",
+			redirect: "/dashboard/protocol-overview",
 			children: [
+				{
+					path: "protocol-overview",
+					name: "protocol-overview",
+					component: ProtocolOverview,
+				},
 				{
 					path: "swap-positions",
 					name: "swap-positions",

@@ -19,12 +19,13 @@ window.addEventListener('resize', () => {
 })
 
 const dashboardPages = [
+	{ key: "protocol-overview", name: "PROTOCOL OVERVIEW", icon: "zap-circle" },
 	{ key: "swap-positions", name: "SWAP POSITIONS", icon: "arrow-top-right" },
 	{ key: "liquidations", name: "LIQUIDATIONS", icon: "zap" },
 	{ key: "lending-overview", name: "LENDING OVERVIEW", icon: "coins" },
 	{ key: "vault-analytics", name: "VAULT ANALYTICS", icon: "blob" },
 	{ key: "earn-harvests", name: "EARN HARVESTS", icon: "check-circle" },
-	{ key: "whale-tracking", name: "WHALE TRACKING", icon: "zap-circle" },
+	{ key: "whale-tracking", name: "WHALE TRACKING", icon: "coins" },
 ]
 
 const currentPage = computed(() => {
