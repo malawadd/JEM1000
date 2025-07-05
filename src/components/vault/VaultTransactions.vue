@@ -121,9 +121,7 @@ watch(() => props.vaultId, loadTransactions)
 							<Text size="11" weight="700" :color="tx.color">{{ tx.type }}</Text>
 						</div>
 						
-						<Text size="12" weight="600" color="secondary" mono>
-							{{ (tx.sender || tx.account || tx.owner)?.slice(0, 10) }}...
-						</Text>
+					
 						
 						<router-link :to="`/dashboard/account/${tx.sender || tx.account || tx.owner}`" :class="$style.accountLink">
 							<Text size="13" weight="600" color="secondary" mono>
