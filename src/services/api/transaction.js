@@ -62,7 +62,7 @@ export const fetchTransactionDetails = async (txHash) => {
 			}
 			
 			# Vault creation events
-			eVaultCreateds(where: { transactionHash: $txHash }) {
+			evaultCreateds(where: { transactionHash: $txHash }) {
 				id evault creator asset dToken blockNumber blockTimestamp
 			}
 			proxyCreateds(where: { transactionHash: $txHash }) {
@@ -73,9 +73,7 @@ export const fetchTransactionDetails = async (txHash) => {
 			callWithContexts(where: { transactionHash: $txHash }) {
 				id selector vault mainAddress accounts type evc blockNumber blockTimestamp
 			}
-			trackingVaultBalances(where: { transactionHash: $txHash }) {
-				id isControllerEnabled vault mainAddress account balance debt blockNumber blockTimestamp
-			}
+			
 		}
 	`
 
