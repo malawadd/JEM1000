@@ -119,7 +119,6 @@ watch(
 						</Flex>
 
 						<template #popup>
-							<DropdownItem v-for="network in appStore.networks" :key="network.key" @click="appStore.network = network.key">
 							<DropdownItem v-for="network in appStore.networks" :key="network.key" @click="appStore.setNetwork(network.key)">
 								<Flex align="center" gap="8">
 									<Icon :name="appStore.network === network.key ? 'check' : ''" size="14" color="secondary" /> 
