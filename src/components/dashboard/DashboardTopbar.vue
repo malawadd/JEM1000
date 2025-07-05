@@ -11,7 +11,7 @@ const props = defineProps({
 const appStore = useAppStore()
 
 const handleNetworkChange = (networkKey) => {
-	appStore.network = networkKey
+	appStore.setNetwork(networkKey)
 }
 </script>
 

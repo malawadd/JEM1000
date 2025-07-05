@@ -148,6 +148,7 @@ export const useVaultsStore = defineStore("vaults", () => {
 		vaults.value = []
 		lastFetched.value = 0
 		error.value = null
+		console.log('Vault cache cleared due to network change')
 	}
 
 	return {

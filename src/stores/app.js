@@ -2,7 +2,28 @@ import { ref } from "vue"
 import { defineStore } from "pinia"
 
 export const useAppStore = defineStore("app", () => {
-	const network = ref("mainnet")
+	// Initialize network from localStorage or default to mainnet
+	const getInitialNetwork = () => {
+		try {
+			const saved = localStorage.getItem('euler-dashboard-network')
+			if (saved) {
+				// Validate that the saved network is still valid
+				const validNetworks = [
+					"mainnet", "base", "swell", "sonic", "bob", "berachain", 
+					"avalanche", "arbitrum", "unichain", "ink", "bsc", 
+					"hyperevm", "optimism", "gnosis", "worldchain", "tacturin"
+				]
+				if (validNetworks.includes(saved)) {
+					return saved
+				}
+			}
+		} catch (error) {
+			console.warn('Failed to load network from localStorage:', error)
+		}
+		return "mainnet"
+	}
+
+	const network = ref(getInitialNetwork())
 	const head = ref()
 
 	const networks = [
@@ -24,5 +45,14 @@ export const useAppStore = defineStore("app", () => {
 		{ key: "tacturin", name: "TAC Turin" }
 	]
 
-	return { network, head, networks }
+	// Watch for network changes and persist to localStorage
+	const setNetwork = (newNetwork) => {
+		network.value = newNetwork
+		try {
+			localStorage.setItem('euler-dashboard-network', newNetwork)
+		} catch (error) {
+			console.warn('Failed to save network to localStorage:', error)
+		}
+	}
+	return { network, head, networks, setNetwork }
 })
