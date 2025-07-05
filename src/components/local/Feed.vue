@@ -59,7 +59,9 @@ watch(() => appStore.network, loadTransactions)
 					<Flex align="center" gap="6">
 						<Text size="14" weight="600" color="primary" mono style="text-transform: uppercase">
 							<Text color="secondary" style="text-transform: capitalize">{{ tx.type }}</Text> 
-							{{ formatAddress(tx.transactionHash) }}
+							<router-link :to="`/dashboard/account/${tx.sender || tx.account || tx.owner}`" :class="$style.accountLink">
+								{{ formatAddress(tx.sender || tx.account || tx.owner) }}
+							</router-link>
 						</Text>
 						<Icon name="arrow-top-right" size="14" color="tertiary" />
 					</Flex>
@@ -111,6 +113,15 @@ watch(() => appStore.network, loadTransactions)
 }
 
 .transactionLink:hover {
+	opacity: 0.8;
+}
+
+.accountLink {
+	text-decoration: none;
+	color: inherit;
+}
+
+.accountLink:hover {
 	opacity: 0.8;
 }
 </style>

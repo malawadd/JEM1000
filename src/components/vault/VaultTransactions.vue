@@ -125,6 +125,12 @@ watch(() => props.vaultId, loadTransactions)
 							{{ (tx.sender || tx.account || tx.owner)?.slice(0, 10) }}...
 						</Text>
 						
+						<router-link :to="`/dashboard/account/${tx.sender || tx.account || tx.owner}`" :class="$style.accountLink">
+							<Text size="13" weight="600" color="secondary" mono>
+								{{ (tx.sender || tx.account || tx.owner)?.slice(0, 10) }}...
+							</Text>
+						</router-link>
+						
 						<Text size="12" weight="600" color="primary" mono>
 							{{ formatAmount(tx.assets || '0') }}
 						</Text>
@@ -220,5 +226,14 @@ watch(() => props.vaultId, loadTransactions)
 	border-radius: 4px;
 	text-align: center;
 	background: rgba(0, 0, 0, 0.3);
+}
+
+.accountLink {
+	text-decoration: none;
+	color: inherit;
+}
+
+.accountLink:hover {
+	opacity: 0.8;
 }
 </style>

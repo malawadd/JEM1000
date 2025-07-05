@@ -11,6 +11,8 @@ import WhaleTracking from "@/views/dashboard/WhaleTracking.vue"
 import VaultDetail from "@/views/dashboard/VaultDetail.vue"
 import TransactionDetail from "@/views/dashboard/TransactionDetail.vue"
 import TransactionSearch from "@/views/dashboard/TransactionSearch.vue"
+import AccountDetail from "@/views/dashboard/AccountDetail.vue"
+import AccountSearch from "@/views/dashboard/AccountSearch.vue"
 
 const router = createRouter({
 	history: createWebHistory(import.meta.env.BASE_URL),
@@ -71,6 +73,17 @@ const router = createRouter({
 					path: "transaction/:txHash",
 					name: "transaction-detail",
 					component: TransactionDetail,
+					props: true,
+				},
+				{
+					path: "account-search",
+					name: "account-search",
+					component: AccountSearch,
+				},
+				{
+					path: "account/:accountId",
+					name: "account-detail",
+					component: AccountDetail,
 					props: true,
 				},
 			],

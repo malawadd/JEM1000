@@ -50,6 +50,14 @@ const toggleSidebar = () => {
 					<Icon name="arrow-top-right" size="16" color="secondary" />
 					<Text v-if="sidebarOpen" size="13" weight="600" color="secondary">TRANSACTION LOOKUP</Text>
 				</div>
+				
+				<div
+					@click="navigateToPage('account-search')"
+					:class="[$style.navItem, route.name === 'account-search' && $style.active]"
+				>
+					<Icon name="coins" size="16" color="secondary" />
+					<Text v-if="sidebarOpen" size="13" weight="600" color="secondary">ACCOUNT LOOKUP</Text>
+				</div>
 			</div>
 			
 			<div

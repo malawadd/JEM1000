@@ -70,7 +70,7 @@ watch(() => appStore.network, loadWhales)
 					</div>
 					
 					<div v-for="whale in whales.slice(0, 15)" :key="whale.id" :class="$style.whaleRow">
-						<router-link :to="`/dashboard/transaction/${whale.transactionHash || whale.id}`" :class="$style.txLink">
+						<router-link :to="`/dashboard/account/${whale.mainAddress}`" :class="$style.accountLink">
 							<Text size="13" weight="600" color="secondary" mono>
 								{{ whale.mainAddress.slice(0, 12) }}...
 							</Text>
@@ -162,12 +162,12 @@ watch(() => appStore.network, loadWhales)
 	background: rgba(255, 165, 0, 0.05);
 }
 
-.txLink {
+.accountLink {
 	text-decoration: none;
 	color: inherit;
 }
 
-.txLink:hover {
+.accountLink:hover {
 	opacity: 0.8;
 }
 </style>
