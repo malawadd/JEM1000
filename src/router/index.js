@@ -70,7 +70,10 @@ const router = createRouter({
 				},
 				{
 					path: "transaction/:txHash",
-	],
+				}
+			]
+		}
+	]
 })
 
 export default router
