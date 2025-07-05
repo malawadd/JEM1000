@@ -66,7 +66,7 @@ JEM1000 is an advanced financial analytics platform specifically designed for Eu
 
 1. **Clone the repository**
    ```bash
-   git clone <repository-url>
+   git clone https://github.com/malawadd/JEM1000.git
    cd jem1000
    ```
 
