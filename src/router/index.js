@@ -9,6 +9,7 @@ import VaultAnalytics from "@/views/dashboard/VaultAnalytics.vue"
 import EarnHarvests from "@/views/dashboard/EarnHarvests.vue"
 import WhaleTracking from "@/views/dashboard/WhaleTracking.vue"
 import VaultDetail from "@/views/dashboard/VaultDetail.vue"
+import TransactionDetailView from "@/views/TransactionDetailView.vue"
 
 const router = createRouter({
 	history: createWebHistory(import.meta.env.BASE_URL),
@@ -17,6 +18,12 @@ const router = createRouter({
 			path: "/",
 			name: "main",
 			component: MainView,
+		},
+		{
+			path: "/transaction/:txHash",
+			name: "transaction-detail",
+			component: TransactionDetailView,
+			props: true,
 		},
 		{
 			path: "/dashboard",
