@@ -42,7 +42,13 @@ watch(() => appStore.network, loadTransactions)
 	<Flex direction="column" gap="16" :class="$style.wrapper">
 		<Text size="12" weight="600" color="tertiary">Latest Transactions</Text>
 
-		<a v-for="tx in transactions" :key="tx.id" gap="8" :href="`${getExplorerURL(appStore.network)}/tx/${tx.transactionHash}`" target="_blank">
+		<router-link
+			v-for="tx in transactions"
+			:key="tx.id"
+			gap="8"
+			:to="`/dashboard/transaction/${tx.transactionHash}`"
+			:class="$style.transactionLink"
+		>
 			<Flex gap="8">
 				<Flex direction="column" align="center" gap="8">
 					<div :class="$style.circle" />
@@ -65,7 +71,7 @@ watch(() => appStore.network, loadTransactions)
 					</Text>
 				</Flex>
 			</Flex>
-		</a>
+		</router-link>
 	</Flex>
 </template>
 
@@ -97,5 +103,14 @@ watch(() => appStore.network, loadTransactions)
 
 .when {
 	margin-bottom: 14px;
+}
+
+.transactionLink {
+	text-decoration: none;
+	color: inherit;
+}
+
+.transactionLink:hover {
+	opacity: 0.8;
 }
 </style>

@@ -58,9 +58,11 @@ watch(() => appStore.network, loadHarvests)
 					<div v-for="harvest in harvests.slice(0, 20)" :key="harvest.id" :class="$style.harvestItem">
 						<Flex align="center" justify="between">
 							<Flex direction="column" gap="4">
-								<Text size="13" weight="600" color="secondary" mono>
-									{{ harvest.harvester.slice(0, 12) }}...
-								</Text>
+								<router-link :to="`/dashboard/transaction/${harvest.transactionHash}`" :class="$style.txLink">
+									<Text size="13" weight="600" color="secondary" mono>
+										{{ harvest.harvester.slice(0, 12) }}...
+									</Text>
+								</router-link>
 								<Text size="11" weight="500" color="tertiary">
 									{{ harvest.eulerEarnVault?.name || 'Unknown Vault' }}
 								</Text>
@@ -139,5 +141,14 @@ watch(() => appStore.network, loadHarvests)
 .harvestItem:hover {
 	background: rgba(0, 255, 157, 0.1);
 	border-color: rgba(0, 255, 157, 0.3);
+}
+
+.txLink {
+	text-decoration: none;
+	color: inherit;
+}
+
+.txLink:hover {
+	opacity: 0.8;
 }
 </style>

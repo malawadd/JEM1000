@@ -79,9 +79,11 @@ export default defineComponent({
 					<Text size="16" weight="700" color="green">RECENT DEPOSITS</Text>
 					<div :class="$style.activityList">
 						<div v-for="deposit in deposits.slice(0, 8)" :key="deposit.id" :class="$style.activityItem">
-							<Text size="12" weight="600" color="secondary" mono>
-								{{ deposit.sender.slice(0, 8) }}...
-							</Text>
+							<router-link :to="`/dashboard/transaction/${deposit.transactionHash}`" :class="$style.txLink">
+								<Text size="12" weight="600" color="secondary" mono>
+									{{ deposit.sender.slice(0, 8) }}...
+								</Text>
+							</router-link>
 							<Text size="12" weight="600" color="green" mono>
 								+{{ formatAmount(deposit.assets) }}
 							</Text>
@@ -93,9 +95,11 @@ export default defineComponent({
 					<Text size="16" weight="700" color="orange">RECENT BORROWS</Text>
 					<div :class="$style.activityList">
 						<div v-for="borrow in borrows.slice(0, 8)" :key="borrow.id" :class="$style.activityItem">
-							<Text size="12" weight="600" color="secondary" mono>
-								{{ borrow.account.slice(0, 8) }}...
-							</Text>
+							<router-link :to="`/dashboard/transaction/${borrow.transactionHash}`" :class="$style.txLink">
+								<Text size="12" weight="600" color="secondary" mono>
+									{{ borrow.account.slice(0, 8) }}...
+								</Text>
+							</router-link>
 							<Text size="12" weight="600" color="orange" mono>
 								{{ formatAmount(borrow.assets) }}
 							</Text>
@@ -170,5 +174,14 @@ export default defineComponent({
 	.activityGrid {
 		grid-template-columns: 1fr;
 	}
+}
+
+.txLink {
+	text-decoration: none;
+	color: inherit;
+}
+
+.txLink:hover {
+	opacity: 0.8;
 }
 </style>

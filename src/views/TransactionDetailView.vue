@@ -1,9 +1,10 @@
 <script setup>
 import { ref, computed, onMounted, watch } from "vue"
-import { useRoute } from "vue-router"
+import { useRoute, useRouter } from "vue-router"
 import { DateTime } from "luxon"
 import { fetchTransactionDetails } from "@/services/api/transaction"
 import { useAppStore } from "@/stores/app"
+import { getExplorerURL } from "@/services/general"
 
 // Components
 import TransactionFlowChart from "@/components/transaction/TransactionFlowChart.vue"
@@ -12,9 +13,11 @@ import EventCard from "@/components/transaction/EventCard.vue"
 import UtilizationGauge from "@/components/transaction/UtilizationGauge.vue"
 
 const route = useRoute()
+const router = useRouter()
 const appStore = useAppStore()
 
 const txHash = computed(() => route.params.txHash)
+const searchTxHash = ref(route.params.txHash || '')
 const transactionData = ref(null)
 const loading = ref(true)
 const error = ref(null)
@@ -110,6 +113,12 @@ const earnData = computed(() => {
 const loadTransactionData = async () => {
 	loading.value = true
 	error.value = null
+	transactionData.value = null
+
+	if (!txHash.value) {
+		loading.value = false
+		return
+	}
 	
 	try {
 		const data = await fetchTransactionDetails(txHash.value)
@@ -122,8 +131,21 @@ const loadTransactionData = async () => {
 	}
 }
 
+const searchTransaction = () => {
+	if (searchTxHash.value && searchTxHash.value !== txHash.value) {
+		router.push({ name: 'transaction-detail', params: { txHash: searchTxHash.value } })
+	}
+}
+
+const openInExplorer = () => {
+	window.open(`${getExplorerURL(appStore.network)}/tx/${txHash.value}`, '_blank', 'noopener noreferrer')
+}
+
 onMounted(loadTransactionData)
-watch(() => txHash.value, loadTransactionData)
+watch(() => txHash.value, (newVal) => {
+	searchTxHash.value = newVal || ''
+	loadTransactionData()
+})
 watch(() => appStore.network, loadTransactionData)
 </script>
 
@@ -137,10 +159,32 @@ watch(() => appStore.network, loadTransactionData)
 					<Text size="14" weight="600" color="secondary" mono>{{ txHash }}</Text>
 				</Flex>
 				
-				<router-link to="/" :class="$style.backLink">
+				<Flex align="center" gap="12">
+					<!-- Search Bar -->
+					<div :class="$style.searchBar">
+						<input
+							type="text"
+							v-model="searchTxHash"
+							@keyup.enter="searchTransaction"
+							placeholder="Enter transaction hash"
+							:class="$style.searchInput"
+						/>
+						<button @click="searchTransaction" :class="$style.searchButton">
+							<Icon name="arrow-top-right" size="16" color="primary" />
+						</button>
+					</div>
+
+					<!-- External Explorer Link -->
+					<button @click="openInExplorer" :class="$style.explorerLink">
+						<Icon name="arrow-top-right" size="16" color="secondary" />
+						<Text size="12" weight="700" color="secondary">VIEW ON EXPLORER</Text>
+					</button>
+
+					<router-link to="/dashboard/swap-positions" :class="$style.backLink">
 					<Icon name="arrow-top-right" size="16" color="secondary" :rotate="180" />
-					<Text size="12" weight="700" color="secondary">BACK TO MAIN</Text>
+					<Text size="12" weight="700" color="secondary">BACK TO DASHBOARD</Text>
 				</router-link>
+				</Flex>
 			</Flex>
 
 			<!-- Loading State -->
@@ -233,11 +277,61 @@ watch(() => appStore.network, loadTransactionData)
 <style module>
 .container {
 	max-width: 1400px;
-	margin: 0 auto;
-	padding: 24px;
-	min-height: 100vh;
-	background: radial-gradient(circle at 20% 80%, rgba(0, 255, 157, 0.03) 0%, transparent 50%),
-				radial-gradient(circle at 80% 20%, rgba(255, 0, 255, 0.03) 0%, transparent 50%);
+}
+
+.searchBar {
+	display: flex;
+	align-items: center;
+	background: rgba(0, 0, 0, 0.6);
+	border: 1px solid rgba(0, 255, 157, 0.2);
+	border-radius: 6px;
+	padding: 4px;
+}
+
+.searchInput {
+	background: transparent;
+	border: none;
+	color: var(--txt-primary);
+	padding: 6px 10px;
+	font-size: 14px;
+	flex-grow: 1;
+	min-width: 200px;
+}
+
+.searchInput::placeholder {
+	color: var(--txt-tertiary);
+}
+
+.searchButton {
+	background: rgba(0, 255, 157, 0.1);
+	border: 1px solid rgba(0, 255, 157, 0.3);
+	border-radius: 4px;
+	padding: 6px;
+	cursor: pointer;
+	transition: all 0.2s ease;
+}
+
+.searchButton:hover {
+	background: rgba(0, 255, 157, 0.2);
+	box-shadow: 0 0 10px rgba(0, 255, 157, 0.3);
+}
+
+.explorerLink {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	padding: 8px 12px;
+	background: rgba(0, 170, 255, 0.1);
+	border: 1px solid rgba(0, 170, 255, 0.3);
+	border-radius: 6px;
+	transition: all 0.2s ease;
+	text-decoration: none;
+	cursor: pointer;
+}
+
+.explorerLink:hover {
+	background: rgba(0, 170, 255, 0.2);
+	box-shadow: 0 0 15px rgba(0, 170, 255, 0.3);
 }
 
 .backLink {

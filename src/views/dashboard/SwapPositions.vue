@@ -66,18 +66,22 @@ watch(() => appStore.network, loadSwaps)
 						<Text size="12" weight="700" color="tertiary">POOL</Text>
 					</div>
 					<div v-for="swap in swaps.slice(0, 10)" :key="swap.id" :class="$style.tableRow">
-						<Text size="13" weight="600" color="secondary" mono>
-							{{ swap.sender.slice(0, 8) }}...
-						</Text>
+						<router-link :to="`/dashboard/transaction/${swap.transactionHash}`" :class="$style.txLink">
+							<Text size="13" weight="600" color="secondary" mono>
+								{{ swap.sender.slice(0, 8) }}...
+							</Text>
+						</router-link>
 						<Text size="13" weight="600" color="primary" mono>
 							{{ formatAmount(swap.amount0In || swap.amount1In) }}
 						</Text>
 						<Text size="13" weight="600" color="green" mono>
 							{{ formatAmount(swap.amount0Out || swap.amount1Out) }}
 						</Text>
-						<Text size="13" weight="600" color="secondary" mono>
-							{{ swap.pool.slice(0, 8) }}...
-						</Text>
+						<router-link :to="`/dashboard/transaction/${swap.transactionHash}`" :class="$style.txLink">
+							<Text size="13" weight="600" color="secondary" mono>
+								{{ swap.pool.slice(0, 8) }}...
+							</Text>
+						</router-link>
 					</div>
 				</div>
 			</div>
@@ -152,5 +156,14 @@ watch(() => appStore.network, loadSwaps)
 
 .tableRow:hover {
 	background: rgba(0, 255, 255, 0.05);
+}
+
+.txLink {
+	text-decoration: none;
+	color: inherit;
+}
+
+.txLink:hover {
+	opacity: 0.8;
 }
 </style>

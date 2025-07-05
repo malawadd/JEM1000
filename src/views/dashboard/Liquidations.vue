@@ -52,12 +52,16 @@ watch(() => appStore.network, loadLiquidations)
 					<div v-for="liq in liquidations.slice(0, 15)" :key="liq.id" :class="$style.liquidationRow">
 						<Flex align="center" justify="between">
 							<Flex direction="column" gap="4">
-								<Text size="13" weight="600" color="red" mono>
-									LIQUIDATED: {{ liq.violator.slice(0, 10) }}...
-								</Text>
-								<Text size="11" weight="500" color="tertiary">
-									BY: {{ liq.liquidator.slice(0, 10) }}...
-								</Text>
+								<router-link :to="`/dashboard/transaction/${liq.transactionHash}`" :class="$style.txLink">
+									<Text size="13" weight="600" color="red" mono>
+										LIQUIDATED: {{ liq.violator.slice(0, 10) }}...
+									</Text>
+								</router-link>
+								<router-link :to="`/dashboard/transaction/${liq.transactionHash}`" :class="$style.txLink">
+									<Text size="11" weight="500" color="tertiary">
+										BY: {{ liq.liquidator.slice(0, 10) }}...
+									</Text>
+								</router-link>
 							</Flex>
 							<Text size="14" weight="700" color="primary" mono>
 								{{ formatAmount(liq.repayAssets) }}
@@ -132,5 +136,14 @@ watch(() => appStore.network, loadLiquidations)
 .liquidationRow:hover {
 	background: rgba(255, 0, 0, 0.1);
 	border-color: rgba(255, 0, 0, 0.3);
+}
+
+.txLink {
+	text-decoration: none;
+	color: inherit;
+}
+
+.txLink:hover {
+	opacity: 0.8;
 }
 </style>
