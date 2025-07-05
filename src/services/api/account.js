@@ -54,7 +54,7 @@ export const fetchAccountDetails = async (accountId) => {
 			}
 			
 			interestAccrueds(where: { account: $account }, first: 50, orderBy: blockTimestamp, orderDirection: desc) {
-				id account assets vault blockNumber blockTimestamp transactionHash
+				id account assets  blockNumber blockTimestamp transactionHash
 			}
 			
 			# Liquidation events
@@ -68,8 +68,8 @@ export const fetchAccountDetails = async (accountId) => {
 			}
 			
 			# Current balances and debt
-			trackingVaultBalances(where: { mainAddress: $account }, first: 50, orderBy: blockTimestamp, orderDirection: desc) {
-				id mainAddress vault balance debt blockNumber blockTimestamp
+			trackingVaultBalances(where: { mainAddress: $account }, first: 50, orderDirection: desc) {
+				id mainAddress vault balance debt  
 			}
 			
 			# Earn & Swap events
@@ -80,7 +80,7 @@ export const fetchAccountDetails = async (accountId) => {
 				]
 			}, first: 50, orderBy: blockTimestamp, orderDirection: desc) {
 				id sender owner assets shares blockNumber blockTimestamp transactionHash
-				eulerEarnVault { name symbol }
+				
 			}
 			
 			eulerEarnWithdraws(where: { 
@@ -91,12 +91,12 @@ export const fetchAccountDetails = async (accountId) => {
 				]
 			}, first: 50, orderBy: blockTimestamp, orderDirection: desc) {
 				id sender receiver owner assets shares blockNumber blockTimestamp transactionHash
-				eulerEarnVault { name symbol }
+				
 			}
 			
 			eulerEarnHarvests(where: { harvester: $account }, first: 50, orderBy: blockTimestamp, orderDirection: desc) {
 				id harvester totalAllocated totalYield totalLoss blockNumber blockTimestamp transactionHash
-				eulerEarnVault { name symbol }
+				
 			}
 			
 			eulerSwaps(where: { sender: $account }, first: 50, orderBy: blockTimestamp, orderDirection: desc) {
