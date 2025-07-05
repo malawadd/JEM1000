@@ -38,6 +38,18 @@ const toggleSidebar = () => {
 		<nav :class="$style.navigation">
 			<div v-if="sidebarOpen" :class="$style.navSection">
 				<Text size="11" weight="600" color="tertiary">ANALYTICS MODULES</Text>
+				
+				<div :class="$style.navSection">
+					<Text size="11" weight="600" color="tertiary">TRANSACTION TOOLS</Text>
+				</div>
+				
+				<div
+					@click="navigateToPage('transaction-search')"
+					:class="[$style.navItem, route.name === 'transaction-search' && $style.active]"
+				>
+					<Icon name="arrow-top-right" size="16" color="secondary" />
+					<Text v-if="sidebarOpen" size="13" weight="600" color="secondary">TRANSACTION LOOKUP</Text>
+				</div>
 			</div>
 			
 			<div

@@ -21,98 +21,110 @@ const searchTxHash = ref(route.params.txHash || '')
 const transactionData = ref(null)
 const loading = ref(true)
 const error = ref(null)
+const queryErrors = ref([])
 
 const formatAddress = (addr) => `${addr.slice(0, 8)}...${addr.slice(-6)}`
 
-// Process all events from transaction data
+// Process all events from transaction data with error handling
 const allEvents = computed(() => {
 	if (!transactionData.value) return []
 	
 	const events = []
 	const data = transactionData.value
 	
-	// Add deposits
-	data.deposits?.forEach(deposit => {
-		events.push({ ...deposit, type: 'deposit' })
-	})
+	// Helper function to safely process events
+	const safeProcess = (eventArray, type) => {
+		try {
+			if (Array.isArray(eventArray)) {
+				eventArray.forEach(event => {
+					events.push({ ...event, type })
+				})
+			}
+		} catch (err) {
+			console.warn(`Error processing ${type} events:`, err)
+			queryErrors.value.push(`Failed to process ${type} events`)
+		}
+	}
 	
-	// Add borrows
-	data.borrows?.forEach(borrow => {
-		events.push({ ...borrow, type: 'borrow' })
-	})
+	// Process different event types with error handling
+	safeProcess(data.deposits, 'deposit')
+	safeProcess(data.borrows, 'borrow')
+	safeProcess(data.withdraws, 'withdraw')
+	safeProcess(data.repays, 'repay')
+	safeProcess(data.transfers, 'transfer')
+	safeProcess(data.liquidates, 'liquidate')
+	safeProcess(data.eulerSwaps, 'swap')
+	safeProcess(data.eulerEarnDeposits, 'earn-deposit')
+	safeProcess(data.eulerEarnWithdraws, 'earn-withdraw')
+	safeProcess(data.eulerEarnHarvests, 'earn-harvest')
 	
-	// Add withdraws
-	data.withdraws?.forEach(withdraw => {
-		events.push({ ...withdraw, type: 'withdraw' })
-	})
-	
-	// Add repays
-	data.repays?.forEach(repay => {
-		events.push({ ...repay, type: 'repay' })
-	})
-	
-	// Add transfers
-	data.transfers?.forEach(transfer => {
-		events.push({ ...transfer, type: 'transfer' })
-	})
-	
-	// Add liquidations
-	data.liquidates?.forEach(liquidate => {
-		events.push({ ...liquidate, type: 'liquidate' })
-	})
-	
-	// Add swaps
-	data.eulerSwaps?.forEach(swap => {
-		events.push({ ...swap, type: 'swap' })
-	})
-	
-	// Add earn deposits
-	data.eulerEarnDeposits?.forEach(earnDeposit => {
-		events.push({ ...earnDeposit, type: 'earn-deposit' })
-	})
-	
-	// Add earn withdraws
-	data.eulerEarnWithdraws?.forEach(earnWithdraw => {
-		events.push({ ...earnWithdraw, type: 'earn-withdraw' })
-	})
-	
-	// Sort by block timestamp
-	return events.sort((a, b) => parseInt(a.blockTimestamp) - parseInt(b.blockTimestamp))
-})
-
-// Get transaction metadata
-const transactionMeta = computed(() => {
-	if (!allEvents.value.length) return null
-	
-	const firstEvent = allEvents.value[0]
-	return {
-		blockNumber: firstEvent.blockNumber,
-		blockTimestamp: firstEvent.blockTimestamp,
-		timestamp: DateTime.fromSeconds(parseInt(firstEvent.blockTimestamp))
+	// Sort by block timestamp with error handling
+	try {
+		return events.sort((a, b) => {
+			const aTime = parseInt(a.blockTimestamp || '0')
+			const bTime = parseInt(b.blockTimestamp || '0')
+			return aTime - bTime
+		})
+	} catch (err) {
+		console.warn('Error sorting events:', err)
+		return events
 	}
 })
 
-// Get vault status if available
+// Get transaction metadata with error handling
+const transactionMeta = computed(() => {
+	try {
+		if (!allEvents.value.length) return null
+		
+		const firstEvent = allEvents.value[0]
+		return {
+			blockNumber: firstEvent.blockNumber,
+			blockTimestamp: firstEvent.blockTimestamp,
+			timestamp: DateTime.fromSeconds(parseInt(firstEvent.blockTimestamp))
+		}
+	} catch (err) {
+		console.warn('Error processing transaction metadata:', err)
+		return null
+	}
+})
+
+// Get vault status if available with error handling
 const vaultStatus = computed(() => {
-	return transactionData.value?.vaultStatuses?.[0] || null
+	try {
+		return transactionData.value?.vaultStatuses?.[0] || null
+	} catch (err) {
+		console.warn('Error processing vault status:', err)
+		return null
+	}
 })
 
-// Get swap data for charts
+// Get swap data for charts with error handling
 const swapData = computed(() => {
-	return transactionData.value?.eulerSwaps || []
+	try {
+		return transactionData.value?.eulerSwaps || []
+	} catch (err) {
+		console.warn('Error processing swap data:', err)
+		return []
+	}
 })
 
-// Get earn data for charts
+// Get earn data for charts with error handling
 const earnData = computed(() => {
-	return [
-		...(transactionData.value?.eulerEarnDeposits || []),
-		...(transactionData.value?.eulerEarnWithdraws || [])
-	]
+	try {
+		return [
+			...(transactionData.value?.eulerEarnDeposits || []),
+			...(transactionData.value?.eulerEarnWithdraws || [])
+		]
+	} catch (err) {
+		console.warn('Error processing earn data:', err)
+		return []
+	}
 })
 
 const loadTransactionData = async () => {
 	loading.value = true
 	error.value = null
+	queryErrors.value = []
 	transactionData.value = null
 
 	if (!txHash.value) {
@@ -123,9 +135,20 @@ const loadTransactionData = async () => {
 	try {
 		const data = await fetchTransactionDetails(txHash.value)
 		transactionData.value = data
+		
+		// Check if we got any data at all
+		const hasAnyData = Object.values(data).some(value => 
+			Array.isArray(value) && value.length > 0
+		)
+		
+		if (!hasAnyData) {
+			queryErrors.value.push('No events found for this transaction hash')
+		}
+		
 	} catch (err) {
 		console.error('Failed to load transaction details:', err)
 		error.value = err.message
+		queryErrors.value.push('Failed to fetch transaction data')
 	} finally {
 		loading.value = false
 	}
@@ -139,6 +162,10 @@ const searchTransaction = () => {
 
 const openInExplorer = () => {
 	window.open(`${getExplorerURL(appStore.network)}/tx/${txHash.value}`, '_blank', 'noopener noreferrer')
+}
+
+const goToSearch = () => {
+	router.push({ name: 'transaction-search' })
 }
 
 onMounted(loadTransactionData)
@@ -177,15 +204,30 @@ watch(() => appStore.network, loadTransactionData)
 					<!-- External Explorer Link -->
 					<button @click="openInExplorer" :class="$style.explorerLink">
 						<Icon name="arrow-top-right" size="16" color="secondary" />
-						<Text size="12" weight="700" color="secondary">VIEW ON EXPLORER</Text>
+						<Text size="12" weight="700" color="secondary">EXPLORER</Text>
 					</button>
 
-					<router-link to="/dashboard/swap-positions" :class="$style.backLink">
-					<Icon name="arrow-top-right" size="16" color="secondary" :rotate="180" />
-					<Text size="12" weight="700" color="secondary">BACK TO DASHBOARD</Text>
-				</router-link>
+					<!-- Back to Search -->
+					<button @click="goToSearch" :class="$style.backLink">
+						<Icon name="arrow-top-right" size="16" color="secondary" :rotate="180" />
+						<Text size="12" weight="700" color="secondary">SEARCH</Text>
+					</button>
 				</Flex>
 			</Flex>
+
+			<!-- Query Errors Warning -->
+			<div v-if="queryErrors.length > 0" :class="$style.warningCard">
+				<Icon name="zap" size="20" color="orange" />
+				<Flex direction="column" gap="8">
+					<Text size="14" weight="600" color="orange">PARTIAL DATA LOADED</Text>
+					<Text size="12" weight="500" color="tertiary">
+						Some queries failed but available data is shown below.
+					</Text>
+					<div v-for="errorMsg in queryErrors" :key="errorMsg" :class="$style.errorItem">
+						<Text size="11" weight="500" color="support">• {{ errorMsg }}</Text>
+					</div>
+				</Flex>
+			</div>
 
 			<!-- Loading State -->
 			<div v-if="loading" :class="$style.loadingCard">
@@ -194,13 +236,18 @@ watch(() => appStore.network, loadTransactionData)
 			</div>
 
 			<!-- Error State -->
-			<div v-else-if="error" :class="$style.errorCard">
+			<div v-else-if="error && !transactionData" :class="$style.errorCard">
 				<Icon name="zap" size="24" color="red" />
 				<Text size="16" weight="600" color="red">FAILED TO LOAD TRANSACTION</Text>
 				<Text size="14" weight="500" color="tertiary">{{ error }}</Text>
-				<button @click="loadTransactionData" :class="$style.retryButton">
-					<Text size="12" weight="700" color="secondary">RETRY</Text>
-				</button>
+				<Flex gap="12">
+					<button @click="loadTransactionData" :class="$style.retryButton">
+						<Text size="12" weight="700" color="secondary">RETRY</Text>
+					</button>
+					<button @click="goToSearch" :class="$style.retryButton">
+						<Text size="12" weight="700" color="secondary">NEW SEARCH</Text>
+					</button>
+				</Flex>
 			</div>
 
 			<!-- Transaction Content -->
@@ -210,15 +257,15 @@ watch(() => appStore.network, loadTransactionData)
 					<Flex align="center" justify="between">
 						<Flex direction="column" gap="8">
 							<Text size="18" weight="700" color="primary">TRANSACTION OVERVIEW</Text>
-							<Flex align="center" gap="16">
+							<Flex align="center" gap="16" v-if="transactionMeta">
 								<Text size="12" weight="500" color="tertiary">
-									Block: {{ transactionMeta?.blockNumber }}
+									Block: {{ transactionMeta.blockNumber }}
 								</Text>
 								<Text size="12" weight="500" color="tertiary">
-									{{ transactionMeta?.timestamp.toFormat('MMM dd, yyyy HH:mm:ss') }}
+									{{ transactionMeta.timestamp.toFormat('MMM dd, yyyy HH:mm:ss') }}
 								</Text>
 								<Text size="12" weight="500" color="tertiary">
-									{{ transactionMeta?.timestamp.toRelative() }}
+									{{ transactionMeta.timestamp.toRelative() }}
 								</Text>
 							</Flex>
 						</Flex>
@@ -253,7 +300,7 @@ watch(() => appStore.network, loadTransactionData)
 					<div :class="$style.eventsGrid">
 						<EventCard
 							v-for="(event, index) in allEvents"
-							:key="event.id"
+							:key="event.id || index"
 							:event="event"
 							:type="event.type"
 							:index="index"
@@ -269,6 +316,9 @@ watch(() => appStore.network, loadTransactionData)
 				<Text size="14" weight="500" color="support">
 					This transaction hash doesn't contain any tracked events on {{ appStore.network }}.
 				</Text>
+				<button @click="goToSearch" :class="$style.searchAgainButton">
+					<Text size="12" weight="700" color="secondary">SEARCH ANOTHER TRANSACTION</Text>
+				</button>
 			</div>
 		</Flex>
 	</div>
@@ -296,6 +346,7 @@ watch(() => appStore.network, loadTransactionData)
 	font-size: 14px;
 	flex-grow: 1;
 	min-width: 200px;
+	font-family: monospace;
 }
 
 .searchInput::placeholder {
@@ -316,17 +367,20 @@ watch(() => appStore.network, loadTransactionData)
 	box-shadow: 0 0 10px rgba(0, 255, 157, 0.3);
 }
 
-.explorerLink {
+.explorerLink, .backLink {
 	display: flex;
 	align-items: center;
 	gap: 8px;
 	padding: 8px 12px;
-	background: rgba(0, 170, 255, 0.1);
-	border: 1px solid rgba(0, 170, 255, 0.3);
+	border: 1px solid;
 	border-radius: 6px;
 	transition: all 0.2s ease;
-	text-decoration: none;
 	cursor: pointer;
+}
+
+.explorerLink {
+	background: rgba(0, 170, 255, 0.1);
+	border-color: rgba(0, 170, 255, 0.3);
 }
 
 .explorerLink:hover {
@@ -335,20 +389,27 @@ watch(() => appStore.network, loadTransactionData)
 }
 
 .backLink {
-	display: flex;
-	align-items: center;
-	gap: 8px;
-	padding: 8px 12px;
 	background: rgba(255, 0, 255, 0.1);
-	border: 1px solid rgba(255, 0, 255, 0.3);
-	border-radius: 6px;
-	transition: all 0.2s ease;
-	text-decoration: none;
+	border-color: rgba(255, 0, 255, 0.3);
 }
 
 .backLink:hover {
 	background: rgba(255, 0, 255, 0.2);
 	box-shadow: 0 0 15px rgba(255, 0, 255, 0.3);
+}
+
+.warningCard {
+	display: flex;
+	align-items: flex-start;
+	gap: 12px;
+	padding: 16px;
+	background: rgba(255, 165, 0, 0.1);
+	border: 1px solid rgba(255, 165, 0, 0.3);
+	border-radius: 8px;
+}
+
+.errorItem {
+	margin-left: 8px;
 }
 
 .loadingCard {
@@ -387,15 +448,16 @@ watch(() => appStore.network, loadTransactionData)
 	border-radius: 8px;
 }
 
-.retryButton {
+.retryButton, .searchAgainButton {
 	background: rgba(255, 255, 255, 0.1);
 	border: 1px solid rgba(255, 255, 255, 0.3);
 	border-radius: 4px;
 	padding: 8px 16px;
 	transition: all 0.2s ease;
+	cursor: pointer;
 }
 
-.retryButton:hover {
+.retryButton:hover, .searchAgainButton:hover {
 	background: rgba(255, 255, 255, 0.2);
 }
 
@@ -445,10 +507,6 @@ watch(() => appStore.network, loadTransactionData)
 }
 
 @media (max-width: 768px) {
-	.container {
-		padding: 16px;
-	}
-	
 	.chartsGrid {
 		grid-template-columns: 1fr;
 	}
